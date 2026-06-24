@@ -8,7 +8,8 @@ export interface Airport {
 export interface Aircraft {
     id: string;
     currentAirport: string;
-    status: "grounded"|"airborne"|"delayed";
+    status: "grounded"|"airborne";
+    lastAvailableTime: number;
 }
 
 export interface Flight {
@@ -16,7 +17,11 @@ export interface Flight {
     aircraftId: string;
     from: string;
     to: string;
+
     departureTime: number;
     arrivalTime: number;
-    
+
+    delayHours: number;
+
+    status: "scheduled"|"departed"|"landed";
 }
