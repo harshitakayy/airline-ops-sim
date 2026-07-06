@@ -10,6 +10,7 @@ export interface Aircraft {
     currentAirport: string;
     status: "grounded"|"airborne";
     lastAvailableTime: number;
+    flights: Flight[];
 }
 
 export interface Flight {

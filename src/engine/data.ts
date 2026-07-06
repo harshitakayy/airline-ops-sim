@@ -27,20 +27,6 @@ const HYD: Airport = {
     lng: 78.4294
 }
 
-const A320: Aircraft = {
-    id: "VT-ABC",
-    currentAirport: "BOM",
-    status: "grounded",
-    lastAvailableTime: 0
-}
-
-const B737: Aircraft = {
-    id: "VT-XYZ",
-    currentAirport: "BLR",
-    status: "grounded",
-    lastAvailableTime: 0
-}
-
 const AI101: Flight = {
     id: "AI101",
     aircraftId: "VT-XYZ",
@@ -84,6 +70,24 @@ const AI104: Flight = {
     delayHours: 0,
     status: "scheduled"
 }
+
+const A320: Aircraft = {
+    id: "VT-ABC",
+    currentAirport: "BOM",
+    status: "grounded",
+    lastAvailableTime: 0,
+    flights: [AI102]
+}
+
+const B737: Aircraft = {
+    id: "VT-XYZ",
+    currentAirport: "BLR",
+    status: "grounded",
+    lastAvailableTime: 0,
+    flights: [AI101,AI103,AI104]
+}
+
+
 
 export const airports: Airport[]= [BOM, DEL, BLR, HYD];
 export const aircrafts: Aircraft[]= [A320, B737];
