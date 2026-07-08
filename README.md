@@ -1,277 +1,127 @@
-#  Airline Operations Simulator
+# Airline Operations Simulator
 
-A flight operations simulation system built using **TypeScript**, **React**, and **Vite**.
+A flight operations simulator built using TypeScript, React, and Vite.
 
-This project models how airlines manage aircraft, schedules, delays, disruptions, and operational costs. The goal is to simulate real-world airline operations and visualize how disruptions propagate through an airline network.
+I started this project to understand how airline operations work at a systems level, especially how aircraft rotations and delays affect later flights in a schedule.
+
+The project is still in development. Right now, I am working on the simulation engine before moving on to the dashboard and visualization.
 
 ---
 
-## Project Vision
+## What the Simulator Does
 
-Modern airlines operate thousands of flights every day.
+The simulator currently models a small airline schedule with:
 
-A delay on a single aircraft can affect multiple flights, airports, passengers, and crew members throughout the day.
-
-This simulator aims to model:
-
-- Aircraft movements
-- Flight schedules
-- Airport operations
+- Airports
+- Aircraft
+- Scheduled flights
+- Departures and arrivals
+- Aircraft rotations
+- Turnaround time
 - Delay propagation
-- Weather disruptions
-- Mechanical failures
-- Operational costs
-- Airline network efficiency
+- Simulation events
 
-The long-term goal is to create an interactive operations dashboard similar to what airline operations control centers use.
+A single aircraft can operate multiple flights during the day. If one flight is delayed, the simulator calculates how that delay affects later flights operated by the same aircraft.
+
+For example:
+
+```text
+VT-XYZ
+
+AI101: BLR → BOM
+AI103: BOM → DEL
+AI104: DEL → HYD
+```
+
+If AI101 arrives late, AI103 cannot depart until the aircraft has arrived in Mumbai and completed its turnaround time. This can then delay AI104 as well.
 
 ---
 
 ## Current Progress
 
-### v0.1 – Basic Flight Simulation Engine ✅
+### Basic Simulation Engine
 
-Implemented:
+The first version of the engine implemented:
 
-- Airport data model
-- Aircraft data model
-- Flight data model
-- Flight scheduling
-- Departure simulation
-- Arrival simulation
-- Aircraft state transitions
-- Simulation clock (`tick()`)
+- Airport, aircraft, and flight data models
+- A simulation clock
+- Scheduled departures
+- Scheduled arrivals
+- Aircraft state changes between grounded and airborne
+- Aircraft location updates after landing
 
-Example simulation output:
+### Aircraft Rotations and Delay Propagation
+
+The simulator now supports aircraft operating a sequence of flights.
+
+For each flight, the engine checks the previous flight in the aircraft's rotation. The next flight cannot depart before:
 
 ```text
-TIME: 9
-AI101 departed BLR
-
-TIME: 11
-AI101 landed BOM
-
-TIME: 12
-AI102 departed BOM
-
-TIME: 14
-AI102 landed BLR
+previous flight arrival
++ previous flight delay
++ turnaround time
 ```
+
+The calculated delay is then propagated to later flights in the rotation.
+
+### Event Logging
+
+The simulation records structured events for:
+
+- Departures
+- Arrivals
+- Delays
+
+Each event contains:
+
+- Simulation time
+- Event type
+- Flight ID
+- A message describing what happened
+
+This event history will later be used by the React dashboard to display an operations timeline.
+
+### Simulation State
+
+The simulation state has been refactored so that every simulation run starts with fresh:
+
+- Flight data
+- Aircraft data
+- Event history
+
+The `runSimulation()` function creates the simulation state, runs the clock through the simulated day, and returns the final flights, aircraft, and events.
 
 ---
 
-## System Architecture
+## How the Simulation Works
 
-### Airport
-
-Represents an airport in the network.
-
-Properties:
-
-- Airport ID
-- Airport name
-- Latitude
-- Longitude
-
-Example:
-
-```ts
-{
-  id: "BOM",
-  name: "Mumbai",
-  lat: 19.0896,
-  lng: 72.8656
-}
-```
-
----
-
-### Aircraft
-
-Represents an aircraft operating flights.
-
-Properties:
-
-- Aircraft registration
-- Current airport
-- Current status
-
-Statuses:
-
-- grounded
-- airborne
-- delayed
-
-Example:
-
-```ts
-{
-  id: "VT-ABC",
-  currentAirport: "BOM",
-  status: "grounded"
-}
-```
-
----
-
-### Flight
-
-Represents a scheduled flight.
-
-Properties:
-
-- Flight number
-- Assigned aircraft
-- Origin airport
-- Destination airport
-- Departure time
-- Arrival time
-
-Example:
-
-```ts
-{
-  id: "AI101",
-  aircraftId: "VT-XYZ",
-  from: "BLR",
-  to: "BOM",
-  departureTime: 9,
-  arrivalTime: 11
-}
-```
-
----
-
-### Simulation Clock
-
-The simulation advances time using a central clock.
+The simulation runs using a central clock.
 
 ```ts
 tick(currentTime);
 ```
 
-For every time step, the engine:
+At every simulated hour, the engine:
 
-1. Checks departures
-2. Checks arrivals
-3. Updates aircraft states
-4. Records operational events
+1. Checks scheduled flights
+2. Calculates delay propagation from previous flights
+3. Checks whether the assigned aircraft is available at the correct airport
+4. Processes departures
+5. Processes arrivals
+6. Updates aircraft state and location
+7. Records simulation events
 
----
+The complete simulation is started through:
 
-## Planned Features
-
-### v0.2 – Delay System
-
-- Flight delays
-- Delayed departures
-- Delayed arrivals
-
-### v0.3 – Aircraft Rotation Logic
-
-Model aircraft operating multiple flights throughout the day.
-
-Example:
-
-```text
-VT-XYZ
-
-BLR → BOM
-BOM → DEL
-DEL → HYD
+```ts
+runSimulation();
 ```
 
----
-
-### v0.4 – Cascading Delays
-
-If one flight is delayed:
-
-```text
-Flight A delayed
-↓
-Aircraft arrives late
-↓
-Flight B delayed
-↓
-Flight C delayed
-```
-
-This is one of the core airline operations challenges and a major focus of this simulator.
+A simulation run creates fresh data, advances the clock, and returns the final state and event history.
 
 ---
 
-### v0.5 – Disruption Engine
-
-Support for:
-
-- Weather disruptions
-- Airport closures
-- Mechanical failures
-- Ground delays
-
----
-
-### v0.6 – Cost Engine
-
-Track operational impact:
-
-- Fuel costs
-- Crew costs
-- Passenger compensation
-- Delay penalties
-
----
-
-### v0.7 – Interactive Dashboard
-
-Build a real-time visualization using React.
-
-Features:
-
-- Interactive map
-- Aircraft tracking
-- Flight status monitoring
-- Event timeline
-- Delay analytics
-
----
-
-## Tech Stack
-
-### Frontend
-
-- React
-- TypeScript
-- Vite
-
-### Simulation Engine
-
-- TypeScript
-
-### Version Control
-
-- Git
-- GitHub
-
----
-
-## Learning Goals
-
-This project is being built to strengthen skills in:
-
-- TypeScript
-- React
-- State management
-- Simulation systems
-- Software architecture
-- Data modelling
-- Event-driven systems
-- Aviation operations concepts
-
----
-
-## Repository Structure
+## Project Structure
 
 ```text
 src/
@@ -279,6 +129,7 @@ src/
 ├── engine/
 │   ├── types.ts
 │   ├── data.ts
+│   ├── events.ts
 │   └── clock.ts
 │
 ├── App.tsx
@@ -286,35 +137,73 @@ src/
 └── index.css
 ```
 
+### `types.ts`
+
+Contains the TypeScript interfaces used by the simulation:
+
+- `Airport`
+- `Aircraft`
+- `Flight`
+- `SimulationEvent`
+
+### `data.ts`
+
+Contains the initial airport data and the functions used to create fresh flight and aircraft state for each simulation run.
+
+### `clock.ts`
+
+Contains the main simulation logic:
+
+- Finding the aircraft assigned to a flight
+- Finding the previous flight in an aircraft rotation
+- Handling departures
+- Handling arrivals
+- Propagating delays
+- Advancing the simulation clock
+- Running the complete simulation
+
+### `events.ts`
+
+Contains event-related simulation structures used to record departures, arrivals, and delays during a simulation run.
+
 ---
 
-## Future Scope
+## Tech Stack
 
-Potential future additions:
-
-- Real airport datasets
-- Live weather integration
-- Airline fleet management
-- Crew scheduling
-- Fuel optimization
-- Airport congestion modelling
-- Multi-airline simulation
+- TypeScript
+- React
+- Vite
+- Git
+- GitHub
 
 ---
 
-## Author
+## What I'm Working on Next
 
-**Harshita Kumawat**
+The next step is to expand and test the simulation engine with larger aircraft rotations and more complex schedules.
 
-B.Tech Computer Science Engineering  
-Vellore Institute of Technology (VIT)
+Planned work includes:
+
+- Adding longer flight rotations for each aircraft
+- Simulating multiple aircraft rotations at the same time
+- Testing delays introduced at different points in a rotation
+- Checking that delays only propagate through the affected aircraft
+- Testing whether scheduled ground time can absorb earlier delays
+- Adding more realistic turnaround-time handling
+
+Once the simulation engine is working reliably with larger schedules, the next stage will be connecting it to the React frontend and building the operations dashboard.
+---
+
+## Why I'm Building This
+
+I wanted to build an aviation-focused project that goes beyond displaying flight data.
+
+The main goal is to understand how individual operational events affect the rest of an airline network. The current version is small, but I am building it step by step, starting with the simulation logic before adding visualization and more complex disruption scenarios.
 
 ---
 
 ## Status
 
-🚧 Active Development
+Active development.
 
-Current Version:
-
-**v0.1 – Basic Flight Simulation Engine**
+The current simulation engine supports basic flight operations, aircraft rotations, turnaround dependencies, cascading delay propagation, and structured event logging.
