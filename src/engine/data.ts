@@ -27,7 +27,9 @@ const HYD: Airport = {
     lng: 78.4294
 }
 
-const AI101: Flight = {
+function createFlights(): Flight[]
+{
+    const AI101: Flight = {
     id: "AI101",
     aircraftId: "VT-XYZ",
     from: "BLR",
@@ -36,9 +38,9 @@ const AI101: Flight = {
     arrivalTime: 11,
     delayHours: 2,
     status: "scheduled"
-}
+    }
 
-const AI102: Flight = {
+    const AI102: Flight = {
     id: "AI102",
     aircraftId: "VT-ABC",
     from: "BOM",
@@ -47,9 +49,9 @@ const AI102: Flight = {
     arrivalTime: 14,
     delayHours: 0,
     status: "scheduled"
-}
+    }
 
-const AI103: Flight = {
+    const AI103: Flight = {
     id: "AI103",
     aircraftId: "VT-XYZ",
     from: "BOM",
@@ -58,9 +60,9 @@ const AI103: Flight = {
     arrivalTime: 14,
     delayHours: 0,
     status: "scheduled"
-}
+    }
 
-const AI104: Flight = {
+    const AI104: Flight = {
     id: "AI104",
     aircraftId: "VT-XYZ",
     from: "DEL",
@@ -69,26 +71,42 @@ const AI104: Flight = {
     arrivalTime: 17,
     delayHours: 0,
     status: "scheduled"
+    }
+
+    return [AI101,AI102,AI103,AI104];
 }
 
-const A320: Aircraft = {
+export const flights = createFlights();
+
+function createAircrafts(flights: Flight[]): Aircraft[]
+{
+    const A320: Aircraft = {
     id: "VT-ABC",
     currentAirport: "BOM",
     status: "grounded",
     lastAvailableTime: 0,
-    flights: [AI102]
-}
+    flights: flights.filter(flight=> flight.aircraftId=="VT-ABC")
+    }
 
-const B737: Aircraft = {
+    const B737: Aircraft = {
     id: "VT-XYZ",
     currentAirport: "BLR",
     status: "grounded",
     lastAvailableTime: 0,
-    flights: [AI101,AI103,AI104]
+    flights: flights.filter(flight=> flight.aircraftId=="VT-XYZ")
+    }
+
+    return [A320, B737];
 }
 
-
-
+export const aircrafts= createAircrafts(flights);
 export const airports: Airport[]= [BOM, DEL, BLR, HYD];
-export const aircrafts: Aircraft[]= [A320, B737];
-export const flights: Flight[]= [AI101, AI102, AI103, AI104];
+
+export function createSimulationData()
+{
+    const flights = createFlights();
+    const aircrafts= createAircrafts(flights);
+
+    return {flights,aircrafts};
+}
+

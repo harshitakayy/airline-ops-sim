@@ -1,7 +1,7 @@
-import { aircrafts, flights } from "./data";
-import type { Flight, Aircraft } from "./types";
+import { createSimulationData } from "./data";
+import type { Flight, Aircraft, SimulationEvent } from "./types";
 
-function getAircraft(flight: Flight): Aircraft | undefined 
+function getAircraft(flight: Flight, aircrafts: Aircraft[]): Aircraft | undefined 
 {
     return aircrafts.find(aircraft => aircraft.id === flight.aircraftId);
 }
@@ -15,7 +15,7 @@ function getPreviousFlight(aircraft: Aircraft, currentFlight: Flight): Flight | 
     return aircraft.flights[currentIndex-1];
 }
 
-function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number) 
+function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number, events: SimulationEvent[]) 
 {
     const turnAroundTime=1;
     const previousFlight= getPreviousFlight(aircraft, flight);
@@ -31,6 +31,12 @@ function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number
     if(propagatedDelay> flight.delayHours)
     {
         flight.delayHours= propagatedDelay;
+        events.push({
+            time: currentTime,
+            type: "delay",
+            flightId: flight.id,
+            message: `${flight.id} delayed by ${flight.delayHours} hour(s)`
+        });
         console.log(`${flight.id} delayed by ${flight.delayHours} hour(s)`);
     }
     if (flight.status !== "scheduled")
@@ -45,11 +51,18 @@ function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number
     flight.status= "departed";
     aircraft.status= "airborne";
 
+    events.push({
+        time: currentTime,
+        type: "departure",
+        flightId: flight.id,
+        message: `${flight.id} departed ${flight.from}`
+    });
+
     console.log(`TIME: ${currentTime}`);
     console.log(`${flight.id} departed ${flight.from}`);
 }
 
-function handleArrival(flight: Flight, aircraft: Aircraft, currentTime: number) 
+function handleArrival(flight: Flight, aircraft: Aircraft, currentTime: number, events: SimulationEvent[]) 
 {
     const actualArrivalTime= flight.arrivalTime + flight.delayHours;
     if (flight.status !== "departed")
@@ -61,27 +74,47 @@ function handleArrival(flight: Flight, aircraft: Aircraft, currentTime: number)
     aircraft.status = "grounded";
     aircraft.currentAirport = flight.to;
 
+    events.push({
+        time: currentTime,
+        type: "arrival",
+        flightId: flight.id,
+        message: `${flight.id} landed ${flight.to}`
+    });
+
+
     console.log(`TIME: ${currentTime}`);
     console.log(`${flight.id} landed ${flight.to}`);
 }
 
-function tick(currentTime: number) 
+function tick(currentTime: number, flights: Flight[], aircrafts: Aircraft[], events: SimulationEvent[]) 
 {
     for (const flight of flights) 
     {
-        const aircraft = getAircraft(flight);
+        const aircraft = getAircraft(flight,aircrafts);
         if (!aircraft)
             continue;
 
-        handleDeparture(flight, aircraft, currentTime);
-        handleArrival(flight, aircraft, currentTime);
+        handleDeparture(flight, aircraft, currentTime, events);
+        handleArrival(flight, aircraft, currentTime, events);
     }
 }
 
-for (let currentTime = 0; currentTime <= 24; currentTime++) 
+function runSimulation(): {flights: Flight[]; aircrafts: Aircraft[]; events: SimulationEvent[]}
 {
-    tick(currentTime);
+    const data = createSimulationData();
+    const events: SimulationEvent[] = [];
+    for (let currentTime = 0; currentTime <= 24; currentTime++) 
+    {
+        tick(currentTime, data.flights, data.aircrafts, events);
+    }
+
+    return {flights: data.flights, aircrafts: data.aircrafts ,events};
 }
 
+const result= runSimulation();
+
 console.log("FINAL AIRCRAFT STATE");
-console.log(aircrafts);
+console.log(result.aircrafts);
+
+console.log("EVENTS");
+console.table(result.events);

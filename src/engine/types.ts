@@ -26,3 +26,10 @@ export interface Flight {
 
     status: "scheduled"|"departed"|"landed";
 }
+
+export interface SimulationEvent {
+    time: number;
+    type: "departure"|"arrival"|"delay";
+    flightId: string;
+    message: string;
+}
