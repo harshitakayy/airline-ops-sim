@@ -9,7 +9,6 @@ export interface Aircraft {
     id: string;
     currentAirport: string;
     status: "grounded"|"airborne";
-    lastAvailableTime: number;
     flights: Flight[];
 }
 

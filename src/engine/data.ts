@@ -34,25 +34,14 @@ function createFlights(): Flight[]
     aircraftId: "VT-XYZ",
     from: "BLR",
     to: "BOM",
-    departureTime: 9,
-    arrivalTime: 11,
+    departureTime: 8,
+    arrivalTime: 10,
     delayHours: 2,
     status: "scheduled"
     }
 
     const AI102: Flight = {
     id: "AI102",
-    aircraftId: "VT-ABC",
-    from: "BOM",
-    to: "BLR",
-    departureTime: 12,
-    arrivalTime: 14,
-    delayHours: 0,
-    status: "scheduled"
-    }
-
-    const AI103: Flight = {
-    id: "AI103",
     aircraftId: "VT-XYZ",
     from: "BOM",
     to: "DEL",
@@ -62,18 +51,40 @@ function createFlights(): Flight[]
     status: "scheduled"
     }
 
-    const AI104: Flight = {
-    id: "AI104",
+    const AI103: Flight = {
+    id: "AI103",
     aircraftId: "VT-XYZ",
     from: "DEL",
     to: "HYD",
     departureTime: 15,
-    arrivalTime: 17,
+    arrivalTime: 16,
     delayHours: 0,
     status: "scheduled"
     }
 
-    return [AI101,AI102,AI103,AI104];
+    const AI201: Flight = {
+    id: "AI201",
+    aircraftId: "VT-ABC",
+    from: "BOM",
+    to: "HYD",
+    departureTime: 8,
+    arrivalTime: 10,
+    delayHours: 2,
+    status: "scheduled"
+    }
+
+    const AI202: Flight = {
+    id: "AI202",
+    aircraftId: "VT-ABC",
+    from: "HYD",
+    to: "BLR",
+    departureTime: 12,
+    arrivalTime: 13,
+    delayHours: 0,
+    status: "scheduled"
+    }
+
+    return [AI101,AI102,AI103,AI201,AI202];
 }
 
 export const flights = createFlights();
@@ -84,7 +95,6 @@ function createAircrafts(flights: Flight[]): Aircraft[]
     id: "VT-ABC",
     currentAirport: "BOM",
     status: "grounded",
-    lastAvailableTime: 0,
     flights: flights.filter(flight=> flight.aircraftId=="VT-ABC")
     }
 
@@ -92,7 +102,6 @@ function createAircrafts(flights: Flight[]): Aircraft[]
     id: "VT-XYZ",
     currentAirport: "BLR",
     status: "grounded",
-    lastAvailableTime: 0,
     flights: flights.filter(flight=> flight.aircraftId=="VT-XYZ")
     }
 

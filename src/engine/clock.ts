@@ -17,6 +17,8 @@ function getPreviousFlight(aircraft: Aircraft, currentFlight: Flight): Flight | 
 
 function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number, events: SimulationEvent[]) 
 {
+    if (flight.status !== "scheduled")
+        return;
     const turnAroundTime=1;
     const previousFlight= getPreviousFlight(aircraft, flight);
 
@@ -37,10 +39,8 @@ function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number
             flightId: flight.id,
             message: `${flight.id} delayed by ${flight.delayHours} hour(s)`
         });
-        console.log(`${flight.id} delayed by ${flight.delayHours} hour(s)`);
+        /*console.log(`${flight.id} delayed by ${flight.delayHours} hour(s)`);*/
     }
-    if (flight.status !== "scheduled")
-        return;
     if (actualDepartureTime !== currentTime)
         return;
     if(aircraft.currentAirport !== flight.from)
@@ -58,8 +58,8 @@ function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number
         message: `${flight.id} departed ${flight.from}`
     });
 
-    console.log(`TIME: ${currentTime}`);
-    console.log(`${flight.id} departed ${flight.from}`);
+    /*console.log(`TIME: ${currentTime}`);
+    console.log(`${flight.id} departed ${flight.from}`);*/
 }
 
 function handleArrival(flight: Flight, aircraft: Aircraft, currentTime: number, events: SimulationEvent[]) 
@@ -82,8 +82,8 @@ function handleArrival(flight: Flight, aircraft: Aircraft, currentTime: number, 
     });
 
 
-    console.log(`TIME: ${currentTime}`);
-    console.log(`${flight.id} landed ${flight.to}`);
+    /*console.log(`TIME: ${currentTime}`);
+    console.log(`${flight.id} landed ${flight.to}`);*/
 }
 
 function tick(currentTime: number, flights: Flight[], aircrafts: Aircraft[], events: SimulationEvent[]) 
@@ -99,9 +99,8 @@ function tick(currentTime: number, flights: Flight[], aircrafts: Aircraft[], eve
     }
 }
 
-function runSimulation(): {flights: Flight[]; aircrafts: Aircraft[]; events: SimulationEvent[]}
+export function runSimulation(data= createSimulationData()): {flights: Flight[]; aircrafts: Aircraft[]; events: SimulationEvent[]}
 {
-    const data = createSimulationData();
     const events: SimulationEvent[] = [];
     for (let currentTime = 0; currentTime <= 24; currentTime++) 
     {
@@ -111,10 +110,10 @@ function runSimulation(): {flights: Flight[]; aircrafts: Aircraft[]; events: Sim
     return {flights: data.flights, aircrafts: data.aircrafts ,events};
 }
 
-const result= runSimulation();
+/*const result= runSimulation();
 
 console.log("FINAL AIRCRAFT STATE");
 console.log(result.aircrafts);
 
 console.log("EVENTS");
-console.table(result.events);
+console.table(result.events);*/
