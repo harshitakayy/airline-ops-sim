@@ -28,7 +28,7 @@ app.get("/events",(req,res)=>{
 
 app.post("/simulation/run", (req, res) =>{
     console.log(req.body);
-    simulation = runSimulation();
+    simulation= runSimulation(undefined,req.body);
     res.json(simulation);
 });
 

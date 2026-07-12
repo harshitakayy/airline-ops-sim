@@ -26,9 +26,28 @@ export interface Flight {
     status: "scheduled"|"departed"|"landed";
 }
 
+export type EventType=
+    | "departure"
+    | "arrival"
+    | "delay"
+    | "weather"
+    | "crew"
+    | "technical";
 export interface SimulationEvent {
     time: number;
-    type: "departure"|"arrival"|"delay";
-    flightId: string;
+    type: EventType;
+    flightId?: string;
     message: string;
+}
+
+export interface SimulationOptions {
+    disruptions?: Disruption[];
+}
+
+export interface Disruption{
+    type: "weather"|"technical"|"crew";
+    airport?: string;
+    aircraftId?:string;
+    delayHours: number;
+    description: string;
 }

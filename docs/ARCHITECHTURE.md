@@ -3,77 +3,212 @@
 ## Current Architecture
 
 ```text
-                 runSimulation()
+                     Client
+
+      (Browser / Thunder Client / React)
+
+                        │
+
+                  HTTP Request
 
                         │
 
                         ▼
 
-              Simulation Clock (tick)
+                Express REST API
+
+      ┌────────────┼─────────────┐
+      ▼            ▼             ▼
+
+ GET /flights   GET /events   POST /simulation/run
 
                         │
 
                         ▼
 
-             Process Every Flight
+                runSimulation()
 
                         │
 
-      ┌─────────────────┴─────────────────┐
+        ┌───────────────┴────────────────┐
 
-      ▼                                   ▼
+        ▼                                ▼
 
-Departure Logic                   Arrival Logic
+ Apply Disruptions                 Simulation Clock
 
-      │                                   │
+        │                              (tick)
 
-      └──────────────┬────────────────────┘
+        ▼                                │
 
-                     ▼
+ Weather / Crew /                 Process Every Flight
+ Technical                               │
 
-            Update Aircraft State
+        │                ┌───────────────┴───────────────┐
 
-                     ▼
+        ▼                ▼                               ▼
 
-              Record Events
+ Record Disruption   Departure Logic             Arrival Logic
+      Events               │                           │
 
-                     ▼
+                            └──────────────┬──────────────┘
 
-        Return Simulation Results
+                                           ▼
+
+                              Update Aircraft State
+
+                                           ▼
+
+                              Record Flight Events
+
+                                           ▼
+
+                              Return Simulation State
+
+                                           ▼
+
+                                   JSON Response
+
+                                           │
+
+                                           ▼
+
+                                         Client
 ```
 
 ---
 
 ## Current Components
 
+### Backend
+
+- Express REST API
+- HTTP request handling
+- JSON request/response handling
+
+### Simulation Engine
+
 - Flight model
 - Aircraft model
 - Airport model
 - Simulation clock
-- Delay propagation
 - Aircraft rotations
-- Event system
+- Delay propagation
+- Turnaround dependency handling
+- Modular disruption system
+- Structured event logging
+
+### Disruption System
+
+- Weather disruptions
+- Technical disruptions
+- Crew disruptions
+- Extensible disruption handlers
+
+### Testing
+
+- Vitest
+- Unit tests for delay propagation
+- Unit tests for aircraft location enforcement
+- Unit tests for simulation events
+
+---
+
+## Current API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/flights` | Returns all flights |
+| GET | `/flights/:id` | Returns a specific flight |
+| GET | `/aircraft` | Returns all aircraft |
+| GET | `/events` | Returns the complete simulation timeline |
+| POST | `/simulation/run` | Runs the simulation using optional disruption inputs and returns the updated simulation state |
 
 ---
 
 ## Planned Architecture
 
 ```text
-React Dashboard
+                   React Dashboard
+
+                          │
+
+                    HTTP + JSON
+
+                          │
+
+                          ▼
+
+                  Express REST API
+
+                          │
+
+        ┌─────────────────┼──────────────────┐
+
+        ▼                 ▼                  ▼
+
+ Simulation Engine   PostgreSQL        External APIs
+        │                                 │
+        │                                 ├── Weather API
+        │                                 ├── Airport Data
+        │                                 └── Flight Data
+        │
+        ▼
+
+  Simulation Pipeline
 
         │
 
-HTTP Requests
+        ├── Apply Disruptions
+        ├── Delay Propagation
+        ├── Aircraft Rotations
+        ├── Event Generation
+        ├── Cost Analysis
+        └── Simulation Results
 
-        │
+                          │
 
-REST API (Express)
+                          ▼
 
-        │
+                   JSON Responses
 
-Simulation Engine
+                          │
 
-        │
+                          ▼
 
-Database
+                         User
 ```
+
+---
+
+## Planned Features
+
+### Simulation Engine
+
+- Flight cancellations
+- Airport closures
+- Diversion handling
+- Maintenance scheduling
+- Aircraft utilization analysis
+- Operational cost calculation
+
+### Frontend
+
+- React operations dashboard
+- Interactive airport map
+- Flight timeline visualization
+- Event timeline
+- Disruption controls
+- Simulation configuration panel
+
+### Backend
+
+- PostgreSQL persistence
+- Historical simulation storage
+- User-defined scenarios
+- Authentication
+
+### Infrastructure
+
+- Docker containerization
+- Cloud deployment
+- CI/CD pipeline

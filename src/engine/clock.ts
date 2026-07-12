@@ -1,5 +1,6 @@
 import { createSimulationData } from "./data";
-import type { Flight, Aircraft, SimulationEvent } from "./types";
+import type { Flight, Aircraft, SimulationEvent, SimulationOptions, Disruption } from "./types";
+import { applyDisruptions } from "./disruptions";
 
 function getAircraft(flight: Flight, aircrafts: Aircraft[]): Aircraft | undefined 
 {
@@ -99,9 +100,13 @@ function tick(currentTime: number, flights: Flight[], aircrafts: Aircraft[], eve
     }
 }
 
-export function runSimulation(data= createSimulationData()): {flights: Flight[]; aircrafts: Aircraft[]; events: SimulationEvent[]}
+export function runSimulation(data= createSimulationData(), options?: SimulationOptions): {flights: Flight[]; aircrafts: Aircraft[]; events: SimulationEvent[]}
 {
+    let disruptions: Disruption[]= [];
+    if (options?.disruptions) 
+        disruptions = options.disruptions;
     const events: SimulationEvent[] = [];
+    applyDisruptions(data.flights, disruptions, events);
     for (let currentTime = 0; currentTime <= 24; currentTime++) 
     {
         tick(currentTime, data.flights, data.aircrafts, events);

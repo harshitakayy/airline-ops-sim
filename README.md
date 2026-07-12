@@ -1,359 +1,919 @@
-# Airline Operations Simulator
+# ✈️ Airline Operations Simulator
 
-A flight operations simulator built using TypeScript, React, and Vite.
+An airline operations simulator built with **TypeScript**, **Express**, **React**, and **Vite** that models how disruptions propagate through an airline schedule using aircraft rotations, turnaround constraints, and operational events.
 
-I started this project to understand how airline operations work at a systems level, especially how aircraft rotations, turnaround time, and delays affect later flights in a schedule.
+Instead of simply displaying flight information, this project simulates how real airline operations behave when delays occur. The simulator tracks aircraft movement, flight dependencies, airport operations, and disruption propagation while exposing the simulation through a REST API.
 
-The project is still in development. The current focus has been building and testing the core simulation engine before moving on to the API, disruptions, and dashboard.
+The long-term vision is to build an airline operations platform capable of simulating real-world operational scenarios and visualizing them through an interactive dashboard.
 
 ---
 
-## What the Simulator Does
+# Why I Built This
 
-The simulator currently models a small airline schedule with:
+Most aviation projects available online display flight data or use public APIs.
 
-- Airports
-- Aircraft
-- Scheduled flights
-- Departures and arrivals
+I wanted to understand how airline operations software actually works behind the scenes.
+
+Questions I wanted to answer include:
+
+- What happens if an aircraft arrives late?
+- How do delays propagate through an aircraft's rotation?
+- When can a delay be absorbed by schedule buffer?
+- How do weather or technical disruptions affect later flights?
+- How can operational events be visualized?
+
+Rather than focusing on user interfaces first, I decided to build the simulation engine from the ground up before exposing it through an API and eventually building a dashboard.
+
+---
+
+# Features
+
+## Simulation Engine
+
+- Airport model
+- Aircraft model
+- Flight model
 - Aircraft rotations
-- Turnaround time
+- Turnaround time modelling
+- Aircraft location tracking
+- Aircraft status tracking
+- Flight departures
+- Flight arrivals
 - Delay propagation
 - Cascading delays
 - Schedule buffer absorption
 - Multiple independent aircraft rotations
-- Aircraft location checks
-- Structured simulation events
 
-A single aircraft can operate multiple flights during the simulated day. If one flight is delayed, the simulator calculates whether that delay affects later flights operated by the same aircraft.
+---
 
-For example:
+## Disruption System
+
+The simulator supports configurable operational disruptions.
+
+Currently implemented:
+
+- Weather disruptions
+- Technical disruptions
+- Crew disruptions
+
+The disruption system is modular, allowing new disruption types to be added independently.
+
+---
+
+## Event System
+
+Every important operational event is recorded.
+
+Examples include:
+
+- Weather disruptions
+- Technical disruptions
+- Crew disruptions
+- Delay propagation
+- Departures
+- Arrivals
+
+The simulator stores structured events instead of relying on console output.
+
+---
+
+## REST API
+
+The simulation engine is exposed through an Express REST API.
+
+Current endpoints:
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/flights` | Retrieve all flights |
+| GET | `/flights/:id` | Retrieve a single flight |
+| GET | `/aircraft` | Retrieve all aircraft |
+| GET | `/events` | Retrieve simulation events |
+| POST | `/simulation/run` | Run a simulation with custom disruptions |
+
+All communication uses JSON.
+
+---
+
+## Testing
+
+The simulation engine is tested using **Vitest**.
+
+Current tests include:
+
+- Delay propagation
+- Delay absorption
+- Cascading delays
+- Independent aircraft rotations
+- Aircraft location validation
+- Event generation
+- Event ordering
+
+Every test creates its own simulation scenario, allowing deterministic and isolated testing.
+
+---
+
+# Example Rotation
+
+```
+Aircraft VT-XYZ
+
+AI101
+BLR → BOM
+
+      │
+
+      ▼
+
+AI102
+BOM → DEL
+
+      │
+
+      ▼
+
+AI103
+DEL → HYD
+```
+
+If AI101 arrives late, the simulator determines whether enough turnaround time exists before AI102 departs.
+
+If not, the delay propagates naturally through the remaining rotation.
+
+---
+
+# Example Event Timeline
+
+```
+Weather Disruption
+BLR (+3h)
+
+        │
+
+        ▼
+
+AI101 Delayed
+
+        │
+
+        ▼
+
+AI102 Delayed
+
+        │
+
+        ▼
+
+AI103 Delayed
+
+        │
+
+        ▼
+
+AI101 Departure
+
+        │
+
+        ▼
+
+AI101 Arrival
+
+        │
+
+        ▼
+
+AI102 Departure
+
+        │
+
+        ▼
+
+...
+```
+
+The simulator records both the **cause** (weather) and the resulting operational events, allowing the complete sequence of the simulation to be visualized.
+
+---
+
+# How the Simulation Works
+
+The simulator models airline operations by advancing a simulation clock one hour at a time.
+
+During every simulation step, each scheduled flight is evaluated to determine whether it can depart or arrive based on aircraft availability, turnaround constraints, airport location, and accumulated delays.
+
+Conceptually, the simulation executes the following pipeline:
+
+```text
+runSimulation()
+
+        │
+
+        ▼
+
+Create Simulation Data
+
+        │
+
+        ▼
+
+Apply Disruptions
+
+        │
+
+        ▼
+
+Weather
+Crew
+Technical
+
+        │
+
+        ▼
+
+Simulation Clock
+
+        │
+
+        ▼
+
+Process Every Flight
+
+        │
+
+        ▼
+
+Calculate Aircraft Availability
+
+        │
+
+        ▼
+
+Handle Departures
+
+        │
+
+        ▼
+
+Handle Arrivals
+
+        │
+
+        ▼
+
+Update Aircraft State
+
+        │
+
+        ▼
+
+Generate Events
+
+        │
+
+        ▼
+
+Return Simulation State
+```
+
+---
+
+## Simulation Clock
+
+The engine advances through an entire day using a central simulation clock.
+
+```ts
+for (let currentTime = 0; currentTime <= 24; currentTime++) {
+    tick(currentTime, flights, aircrafts, events);
+}
+```
+
+At every simulated hour the engine evaluates every flight and determines whether operational conditions allow it to depart or arrive.
+
+---
+
+## Aircraft Rotations
+
+Each aircraft stores the sequence of flights it is scheduled to operate.
+
+Example:
 
 ```text
 VT-XYZ
 
-AI101: BLR → BOM
-AI102: BOM → DEL
-AI103: DEL → HYD
+AI101
+BLR → BOM
+
+↓
+
+AI102
+BOM → DEL
+
+↓
+
+AI103
+DEL → HYD
 ```
 
-If AI101 arrives late, AI102 cannot depart until the aircraft has arrived in Mumbai and completed its turnaround time.
-
-If the delay is large enough, it can continue propagating through later flights in the rotation. If there is enough scheduled ground time between flights, the delay can be absorbed and later flights can return to their original schedule.
+Instead of treating every flight independently, the simulator understands that the same aircraft must physically complete one flight before operating the next.
 
 ---
 
-## Current Progress
+## Turnaround Constraints
 
-### Basic Simulation Engine
+An aircraft cannot immediately depart after landing.
 
-The first version of the engine implemented:
-
-- Airport, aircraft, and flight data models
-- A simulation clock
-- Scheduled departures
-- Scheduled arrivals
-- Aircraft state changes between grounded and airborne
-- Aircraft location updates after landing
-
-### Aircraft Rotations
-
-The simulator supports aircraft operating a sequence of connected flights.
-
-Each aircraft stores its own flight rotation. For a flight in a rotation, the engine checks the previous flight before calculating when the aircraft is available for the next departure.
-
-The next flight cannot depart before:
-
-```text
-previous flight scheduled arrival
-+ previous flight delay
-+ turnaround time
-```
-
-The engine also checks that:
-
-- The aircraft is grounded
-- The aircraft is at the correct departure airport
-- The flight is still scheduled
-
-These checks prevent invalid departures.
-
-### Delay Propagation
-
-The simulator calculates the earliest possible departure time of each flight.
+The simulator models turnaround time before the next departure becomes possible.
 
 Conceptually:
 
 ```text
-earliest aircraft availability
+Earliest Departure
+
 =
-previous flight actual arrival
-+ turnaround time
+
+Previous Flight Arrival
+
++
+
+Previous Flight Delay
+
++
+
+Turnaround Time
 ```
 
-The actual departure time is determined by comparing the flight's scheduled departure time, existing delay, and aircraft availability.
-
-This allows the engine to model:
-
-- Delay propagation to the next flight
-- Cascading delays across several connected flights
-- Schedule buffer absorbing earlier delays
-- Independent rotations where one delayed aircraft does not affect another aircraft
-
-### Event Logging
-
-The simulation records structured events for:
-
-- Departures
-- Arrivals
-- Delays
-
-Each event contains:
-
-- Simulation time
-- Event type
-- Flight ID
-- A message describing what happened
-
-For example:
-
-```ts
-{
-  time: 8,
-  type: "departure",
-  flightId: "TEST101",
-  message: "TEST101 departed BLR"
-}
-```
-
-The simulation engine returns these events as data instead of relying on console output.
-
-This event history can later be exposed through the API and used by the React dashboard to display an operations timeline.
-
-### Automated Testing
-
-The simulation engine is tested using Vitest.
-
-The current test suite covers:
-
-- Delay propagation to the next flight
-- Delay absorption when sufficient schedule buffer exists
-- Cascading delay through a longer aircraft rotation
-- Recovery of later flights after delay absorption
-- Independent aircraft rotations
-- Prevention of departure when an aircraft is at the wrong airport
-- Departure and arrival event generation and ordering
-
-Each test creates its own isolated simulation scenario instead of depending on the default data in `data.ts`.
-
-This makes the engine easier to test with different schedules and prevents changes to the default scenario from affecting unrelated tests.
+If this calculated time is later than the scheduled departure, the delay propagates.
 
 ---
 
-## How the Simulation Works
+## Delay Propagation
 
-The simulation runs using a central clock.
+The simulator determines each flight's actual departure time by comparing:
 
-At every simulated hour, the engine processes the current simulation state.
+- Scheduled departure
+- Existing delay
+- Aircraft availability
 
 Conceptually:
+
+```text
+Actual Departure
+
+=
+
+max(
+
+Scheduled Departure,
+
+Aircraft Available Time
+
+)
+```
+
+This naturally produces cascading delays through an aircraft rotation.
+
+---
+
+## Buffer Absorption
+
+Not every delay propagates.
+
+If sufficient ground time exists between flights, the aircraft can recover before the next scheduled departure.
+
+Example:
+
+```text
+Flight A
+
+↓
+
+Delayed by 1 hour
+
+↓
+
+Aircraft still becomes available
+
+↓
+
+Flight B departs on schedule
+```
+
+This reflects how airlines use schedule buffer to improve operational robustness.
+
+---
+
+## Aircraft Validation
+
+Before allowing a departure, the simulator verifies that:
+
+- The aircraft exists.
+- The aircraft is grounded.
+- The aircraft is currently located at the correct airport.
+- The flight is still scheduled.
+
+These checks prevent impossible flight movements.
+
+---
+
+# Disruption System
+
+The simulator supports configurable operational disruptions.
+
+Each disruption modifies the simulation before the clock begins advancing.
 
 ```text
 runSimulation()
-        ↓
-tick(currentTime)
-        ↓
-process each flight
-        ↓
-calculate aircraft availability
-        ↓
-process valid departures and arrivals
-        ↓
-update flight and aircraft state
-        ↓
-record events
+
+↓
+
+Apply Disruptions
+
+↓
+
+Weather
+
+Crew
+
+Technical
+
+↓
+
+Simulation Clock
 ```
 
-At every time step, the engine:
+The disruption system is intentionally separated from the simulation clock.
 
-1. Checks scheduled flights
-2. Calculates delay propagation from previous flights
-3. Checks whether the assigned aircraft is available
-4. Checks whether the aircraft is at the correct airport
-5. Processes departures
-6. Processes arrivals
-7. Updates aircraft state and location
-8. Records simulation events
-
-The complete simulation is run through:
-
-```ts
-runSimulation();
-```
-
-By default, this uses the standard simulation data.
-
-The function can also receive a custom scenario:
-
-```ts
-runSimulation(scenario);
-```
-
-This is used by the automated tests to run controlled schedules with known expected outcomes.
+This keeps the clock responsible only for advancing time while disruption logic remains modular.
 
 ---
 
-## Design Decisions
+## Weather Disruptions
 
-### Simulation Data Can Be Supplied to `runSimulation()`
+Weather disruptions affect flights departing from a specific airport.
 
-The first version of `runSimulation()` created its simulation data internally.
+Example:
 
-The function was later changed so that scenario data can be supplied by the caller while still keeping the default simulation data available.
+```json
+{
+    "type": "weather",
+    "airport": "BLR",
+    "delayHours": 3,
+    "reason": "Thunderstorm"
+}
+```
 
-This allows:
-
-- The normal simulation to run with default data
-- Tests to create small controlled scenarios
-- Different schedules to be simulated without changing `data.ts`
-
-This also keeps the simulation logic separate from the source of its input data.
-
-### Fresh State for Every Simulation Run
-
-Flight and aircraft objects are mutable during a simulation.
-
-For example:
-
-- Flight status changes from `scheduled` to `departed` to `landed`
-- Aircraft status changes between `grounded` and `airborne`
-- Aircraft location changes after landing
-- Delay values can change through propagation
-
-For this reason, simulation data is created fresh for each normal run instead of reusing already-mutated state from a previous simulation.
-
-### Structured Events Instead of Console Output
-
-Early versions of the engine used `console.log()` to inspect departures, arrivals, and delays.
-
-The engine now records these as structured `SimulationEvent` objects.
-
-This makes the output:
-
-- Testable
-- Easier to expose through an API
-- Easier to display in a frontend
-- Independent of terminal output
-
-### Aircraft Rotations Define Delay Dependencies
-
-Delay propagation is based on the sequence of flights assigned to the same aircraft.
-
-A delayed flight affects the next flight only when both flights belong to the same aircraft rotation.
-
-This prevents delays from incorrectly propagating between independent aircraft.
+Every affected flight receives the specified initial delay before the simulation begins.
 
 ---
 
-## Project Structure
+## Technical Disruptions
+
+Technical disruptions affect a specific aircraft.
+
+Example:
+
+```json
+{
+    "type": "technical",
+    "aircraftId": "VT-XYZ",
+    "delayHours": 5,
+    "reason": "Hydraulic Failure"
+}
+```
+
+Only flights operated by that aircraft are affected.
+
+---
+
+## Crew Disruptions
+
+Crew disruptions currently operate similarly to aircraft disruptions.
+
+Example:
+
+```json
+{
+    "type": "crew",
+    "aircraftId": "VT-ABC",
+    "delayHours": 2,
+    "reason": "Crew Rest Requirement"
+}
+```
+
+Future versions will introduce dedicated crew objects and duty-hour modelling.
+
+---
+
+# Event System
+
+Rather than printing simulation progress to the console, the simulator records structured operational events.
+
+Example:
+
+```ts
+{
+    time: 8,
+    type: "departure",
+    flightId: "AI101",
+    message: "AI101 departed BLR"
+}
+```
+
+The simulator currently records:
+
+- Weather disruptions
+- Technical disruptions
+- Crew disruptions
+- Delay events
+- Departures
+- Arrivals
+
+These events form a complete operational timeline that can later be visualized in the React dashboard.
+
+---
+
+# REST API
+
+The simulation engine is exposed through an Express REST API, allowing external applications to interact with the simulator without directly accessing the simulation code.
+
+The backend acts as the communication layer between clients and the simulation engine.
 
 ```text
-src/
-│
-├── engine/
-│   ├── types.ts
-│   ├── data.ts
-│   ├── clock.ts
-│   └── clock.test.ts
-│
-├── App.tsx
-├── main.tsx
-└── index.css
+Client
+
+(Browser / Thunder Client / React)
+
+        │
+
+ HTTP Request
+
+        │
+
+        ▼
+
+Express REST API
+
+        │
+
+        ▼
+
+Simulation Engine
+
+        │
+
+        ▼
+
+JSON Response
+
+        │
+
+        ▼
+
+Client
 ```
-
-### `types.ts`
-
-Contains the TypeScript interfaces used by the simulation:
-
-- `Airport`
-- `Aircraft`
-- `Flight`
-- `SimulationEvent`
-
-### `data.ts`
-
-Contains the initial airport data and the functions used to create fresh flight and aircraft state for a normal simulation run.
-
-### `clock.ts`
-
-Contains the main simulation logic:
-
-- Finding the aircraft assigned to a flight
-- Finding the previous flight in an aircraft rotation
-- Handling departures
-- Handling arrivals
-- Propagating delays
-- Advancing the simulation clock
-- Running the complete simulation
-
-### `clock.test.ts`
-
-Contains automated tests for the simulation engine using isolated flight and aircraft scenarios.
 
 ---
 
-## Tech Stack
+## API Endpoints
 
-### Current
+### Get All Flights
+
+```http
+GET /flights
+```
+
+Returns every flight in the current simulation.
+
+---
+
+### Get Flight By ID
+
+```http
+GET /flights/:id
+```
+
+Example:
+
+```http
+GET /flights/AI101
+```
+
+Returns:
+
+```json
+{
+    "id": "AI101",
+    "from": "BLR",
+    "to": "BOM",
+    "status": "landed"
+}
+```
+
+---
+
+### Get Aircraft
+
+```http
+GET /aircraft
+```
+
+Returns every aircraft and its current simulation state.
+
+---
+
+### Get Events
+
+```http
+GET /events
+```
+
+Returns the complete operational timeline.
+
+Example:
+
+```json
+[
+    {
+        "time": 0,
+        "type": "weather",
+        "message": "Weather disruption at BLR (+3h)"
+    },
+    {
+        "time": 13,
+        "type": "departure",
+        "flightId": "AI101",
+        "message": "AI101 departed BLR"
+    }
+]
+```
+
+---
+
+### Run Simulation
+
+```http
+POST /simulation/run
+```
+
+Request:
+
+```json
+{
+    "disruptions": [
+        {
+            "type": "weather",
+            "airport": "BLR",
+            "delayHours": 3,
+            "reason": "Thunderstorm"
+        }
+    ]
+}
+```
+
+The server applies the supplied disruptions, executes the simulation, and returns the updated simulation state.
+
+---
+
+# Project Structure
+
+```text
+airline-ops-sim/
+
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── DECISIONS.md
+│   └── LEARNINGS.md
+│
+├── server/
+│   └── server.ts
+│
+├── src/
+│
+│   ├── engine/
+│   │
+│   ├── clock.ts
+│   ├── clock.test.ts
+│   ├── data.ts
+│   ├── disruptions.ts
+│   └── types.ts
+│
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+│
+├── package.json
+└── README.md
+```
+
+---
+
+# Documentation
+
+The repository contains additional documentation describing the simulator in detail.
+
+| File | Description |
+|------|-------------|
+| `ARCHITECTURE.md` | Overall system architecture |
+| `DECISIONS.md` | Major design decisions |
+| `LEARNINGS.md` | Concepts learned during development |
+
+---
+
+# Tech Stack
+
+## Current
+
+### Language
 
 - TypeScript
+
+### Frontend
+
 - React
 - Vite
+
+### Backend
+
+- Node.js
+- Express
+- REST API
+- JSON
+
+### Testing
+
 - Vitest
+- Thunder Client
+
+### Development
+
 - Git
 - GitHub
 
-### Planned
+---
 
-The project will later add backend, persistence, deployment, and external-data components as those phases are implemented.
+## Planned
+
+- PostgreSQL
+- Docker
+- Leaflet
+- OpenStreetMap
+- Weather APIs
+- Cloud Deployment
 
 ---
 
-## What I'm Working on Next
+# Running the Project
 
-The next phase is to expose the simulation engine through a REST API.
+## Clone
 
-The immediate plan is to:
-
-- Design API endpoints for flights, aircraft, rotations, simulation state, and events
-- Connect API routes to the simulation engine
-- Return simulation results as JSON
-- Add API-level validation and testing
-- Introduce a more suitable time representation for multi-day schedules
-- Add persistence once the API structure is stable
-
-After the API foundation is working, the simulator will be extended with disruption scenarios such as:
-
-- Weather delays
-- Airport disruptions
-- Mechanical delays
-
-Later phases will include operational cost modelling, recovery decisions, dashboard visualization, and deployment.
+```bash
+git clone <repository-url>
+```
 
 ---
 
-## Why I'm Building This
+## Install Dependencies
 
-I wanted to build an aviation-focused project that goes beyond displaying flight data.
-
-The main goal is to understand how individual operational events affect the rest of an airline schedule and eventually compare how different operational decisions affect delays and costs.
-
-The current version focuses on aircraft movement, rotations, delay dependencies, and event generation. I am building the project in stages so that the simulation logic is reliable before adding the API, disruption models, and visualization.
+```bash
+npm install
+```
 
 ---
 
-## Status
+## Start React
 
-Active development.
+```bash
+npm run dev
+```
 
-The current simulation engine supports flight operations, aircraft rotations, turnaround dependencies, cascading delay propagation, schedule buffer absorption, multiple independent aircraft rotations, aircraft location enforcement, structured event logging, and automated simulation tests.
+---
+
+## Start Backend
+
+```bash
+npm run server
+```
+
+---
+
+## Run Tests
+
+```bash
+npm test
+```
+
+---
+
+# Development Roadmap
+
+## ✅ Completed
+
+- Airport model
+- Aircraft model
+- Flight model
+- Aircraft rotations
+- Turnaround modelling
+- Delay propagation
+- Buffer absorption
+- Event logging
+- Automated testing
+- Express REST API
+- JSON API
+- Configurable disruptions
+- Weather disruptions
+- Technical disruptions
+- Crew disruptions
+
+---
+
+## 🚧 In Progress
+
+- Flight cancellations
+- Cost modelling
+- Airport operational metrics
+- Aircraft utilization
+
+---
+
+## 📋 Planned
+
+### Frontend
+
+- React dashboard
+- Flight timeline
+- Event timeline
+- Interactive airport map
+- Simulation controls
+
+### Backend
+
+- PostgreSQL
+- Historical simulations
+- Authentication
+- Scenario persistence
+
+### Infrastructure
+
+- Docker
+- CI/CD
+- Cloud deployment
+
+---
+
+# Future Improvements
+
+The simulator is intended to evolve into a more complete airline operations platform.
+
+Planned capabilities include:
+
+- Flight cancellations
+- Airport closures
+- Diversions
+- Maintenance scheduling
+- Crew scheduling
+- Passenger connections
+- Fuel modelling
+- Cost analysis
+- Airline recovery strategies
+- Live weather integration
+- Multi-day simulation
+- Performance analytics
+
+---
+
+# Why This Project Matters
+
+Most airline-related student projects focus on displaying information.
+
+This project focuses on **simulating airline operations**.
+
+Instead of asking:
+
+> "Where is this aircraft?"
+
+the simulator asks:
+
+> "Can this aircraft legally operate its next flight?"
+
+Instead of displaying delays, it models **why those delays occur** and how they propagate through the airline schedule.
+
+The long-term objective is to build a realistic airline operations simulator capable of visualizing disruptions, operational decisions, and recovery strategies through an interactive web application.
+
+---
+
+# Status
+
+**🚧 Active Development**
+
+Current capabilities include:
+
+- Aircraft rotations
+- Delay propagation
+- Schedule buffer absorption
+- Configurable disruptions
+- Structured event timeline
+- Express REST API
+- JSON communication
+- Automated testing
+
+The current focus is expanding the operational simulation before developing the React operations dashboard and integrating PostgreSQL for persistent simulation storage.
