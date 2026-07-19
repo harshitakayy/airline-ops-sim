@@ -12,6 +12,11 @@ export interface Aircraft {
     flights: Flight[];
 }
 
+export type FlightStatus=
+    | "scheduled"
+    | "departed"
+    | "landed"
+    | "cancelled";
 export interface Flight {
     id: string;
     aircraftId: string;
@@ -23,13 +28,14 @@ export interface Flight {
 
     delayHours: number;
 
-    status: "scheduled"|"departed"|"landed";
+    status: FlightStatus;
 }
 
 export type EventType=
     | "departure"
     | "arrival"
     | "delay"
+    |"cancellation"
     | "weather"
     | "crew"
     | "technical";

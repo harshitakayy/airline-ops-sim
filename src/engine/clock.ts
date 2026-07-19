@@ -16,6 +16,25 @@ function getPreviousFlight(aircraft: Aircraft, currentFlight: Flight): Flight | 
     return aircraft.flights[currentIndex-1];
 }
 
+const CANCELLATION_THRESHOLD = 6;
+
+function handleCancellation(flight: Flight, currentTime: number, events: SimulationEvent[])
+{
+    if(flight.status!=="scheduled")
+        return;
+    if(currentTime!==flight.departureTime)
+        return;
+    if(flight.delayHours<CANCELLATION_THRESHOLD)
+        return;
+    flight.status="cancelled";
+    events.push({
+        time: currentTime,
+        type:"cancellation",
+        flightId:flight.id,
+        message: `${flight.id} cancelled: delay exceeded threshold`
+    });
+}
+
 function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number, events: SimulationEvent[]) 
 {
     if (flight.status !== "scheduled")
@@ -26,8 +45,21 @@ function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number
     let actualDepartureTime= flight.departureTime + flight.delayHours;
     if(previousFlight !== undefined)
     {
-        const earliestAvailableTime= previousFlight.arrivalTime + previousFlight.delayHours + turnAroundTime;
-        actualDepartureTime= Math.max(earliestAvailableTime, actualDepartureTime);
+        if (previousFlight.status === "cancelled") {
+        flight.status = "cancelled";
+        events.push({
+            time: currentTime,
+            type: "cancellation",
+            flightId: flight.id,
+            message: `${flight.id} cancelled: aircraft unavailable`
+        });
+        return;
+    }
+
+    if (previousFlight.status !== "landed") 
+        return;
+    const earliestAvailableTime= previousFlight.arrivalTime + previousFlight.delayHours + turnAroundTime;
+    actualDepartureTime= Math.max(earliestAvailableTime, actualDepartureTime);
     }
     
     const propagatedDelay= actualDepartureTime- flight.departureTime;
@@ -44,7 +76,7 @@ function handleDeparture(flight: Flight, aircraft: Aircraft, currentTime: number
     }
     if (actualDepartureTime !== currentTime)
         return;
-    if(aircraft.currentAirport !== flight.from)
+    if (aircraft.currentAirport !== flight.from)
         return;
     if(aircraft.status !=="grounded")
         return;
@@ -94,7 +126,7 @@ function tick(currentTime: number, flights: Flight[], aircrafts: Aircraft[], eve
         const aircraft = getAircraft(flight,aircrafts);
         if (!aircraft)
             continue;
-
+        handleCancellation(flight, currentTime, events);
         handleDeparture(flight, aircraft, currentTime, events);
         handleArrival(flight, aircraft, currentTime, events);
     }

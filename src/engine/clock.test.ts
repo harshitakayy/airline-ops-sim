@@ -281,3 +281,148 @@ describe("Simulation events", () => {
     ]);
     });
 });
+
+
+describe("Flight cancellation", () => {
+    it("should cancel a flight whose delay exceeds the threshold at departure times", () => {
+        const flight: Flight = {
+            id: "TEST101",
+            aircraftId: "VT-TEST",
+            from: "BLR",
+            to: "BOM",
+            departureTime: 8,
+            arrivalTime: 10,
+            delayHours: 6,
+            status: "scheduled"
+        };
+        const plane: Aircraft = {
+            id: "VT-TEST",
+            currentAirport: "BLR",
+            status: "grounded",
+            flights: [flight]
+        };
+
+        const scenario = {
+            flights: [flight],
+            aircrafts: [plane]
+        };
+
+        const result = runSimulation(scenario);
+        expect(result.events.some(event=> event.type==="cancellation")).toBe(true);
+        expect(result.events.some(event=> event.type==="departure")).toBe(false);
+        expect(result.flights[0].status).toBe("cancelled");
+        expect(result.events[0].type).toBe("cancellation");
+    });
+
+    it("should keep the aircraft at the origin airport after cancellation", () => {
+        const flight: Flight = {
+            id: "TEST101",
+            aircraftId: "VT-TEST",
+            from: "BLR",
+            to: "BOM",
+            departureTime: 8,
+            arrivalTime: 10,
+            delayHours: 6,
+            status: "scheduled"
+        };
+        const plane: Aircraft = {
+            id: "VT-TEST",
+            currentAirport: "BLR",
+            status: "grounded",
+            flights: [flight]
+        };
+
+        const scenario = {
+            flights: [flight],
+            aircrafts: [plane]
+        };
+
+        const result = runSimulation(scenario);
+        expect(result.aircrafts[0].currentAirport).toBe("BLR");
+        expect(result.aircrafts[0].status).toBe("grounded");
+    });
+
+    it("should block the next flight after cancellation", () => {
+        const firstFlight: Flight = {
+            id: "TEST101",
+            aircraftId: "VT-TEST",
+            from: "BLR",
+            to: "BOM",
+            departureTime: 8,
+            arrivalTime: 10,
+            delayHours: 6,
+            status: "scheduled"
+        };
+        const secondFlight: Flight = {
+            id: "TEST102",
+            aircraftId: "VT-TEST",
+            from: "BOM",
+            to: "DEL",
+            departureTime: 11,
+            arrivalTime: 14,
+            delayHours: 0,
+            status: "scheduled"
+        };
+        const plane: Aircraft = {
+            id: "VT-TEST",
+            currentAirport: "BLR",
+            status: "grounded",
+            flights: [firstFlight, secondFlight]
+        };
+
+        const scenario = {
+            flights: [firstFlight, secondFlight],
+            aircrafts: [plane]
+        };
+
+        const result = runSimulation(scenario);
+
+        expect(result.aircrafts[0].currentAirport).toBe("BLR");
+        expect(result.aircrafts[0].status).toBe("grounded");
+        expect(result.flights[1].status).toBe("cancelled");
+        expect(result.events.some(event=>(event.flightId==="TEST102" && event.type==="cancellation"))).toBe(true);
+    });
+
+    it("should delay the next flight when the previous flight lands late", () => {
+        const firstFlight: Flight = {
+            id: "TEST101",
+            aircraftId: "VT-TEST",
+            from: "BLR",
+            to: "BOM",
+            departureTime: 8,
+            arrivalTime: 10,
+            delayHours: 2,
+            status: "scheduled"
+        };
+        const secondFlight: Flight = {
+            id: "TEST102",
+            aircraftId: "VT-TEST",
+            from: "BOM",
+            to: "DEL",
+            departureTime: 11,
+            arrivalTime: 14,
+            delayHours: 0,
+            status: "scheduled"
+        };
+        const plane: Aircraft = {
+            id: "VT-TEST",
+            currentAirport: "BLR",
+            status: "grounded",
+            flights: [firstFlight, secondFlight]
+        };
+
+        const scenario = {
+            flights: [firstFlight, secondFlight],
+            aircrafts: [plane]
+        };
+
+        const result = runSimulation(scenario);
+
+        expect(result.aircrafts[0].currentAirport).toBe("DEL");
+        expect(result.aircrafts[0].status).toBe("grounded");
+        expect(result.flights[1].status).toBe("landed");
+        expect(result.flights[1].delayHours).toBe(2);
+        expect(result.events.some(event=>(event.flightId==="TEST102" && event.type==="departure"))).toBe(true);
+    });
+
+});
