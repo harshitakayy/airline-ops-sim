@@ -43,6 +43,9 @@ Rather than focusing on user interfaces first, I decided to build the simulation
 - Cascading delays
 - Schedule buffer absorption
 - Multiple independent aircraft rotations
+- Flight cancellation based on delay threshold
+- Downstream cancellation due to aircraft unavailability
+- Operational metrics generation
 
 ---
 
@@ -70,10 +73,28 @@ Examples include:
 - Technical disruptions
 - Crew disruptions
 - Delay propagation
+- Flight cancellations
+- Aircraft unavailable cancellations
 - Departures
 - Arrivals
 
 The simulator stores structured events instead of relying on console output.
+
+---
+
+## Operational Metrics
+
+The simulator generates operational metrics after every simulation run.
+
+Current metrics include:
+
+- Average flight delay
+- On-time flights
+- Delayed flights
+- Cancelled flights
+- Aircraft utilization
+
+These metrics provide a high-level operational summary that will be displayed in the upcoming React operations dashboard.
 
 ---
 
@@ -102,10 +123,13 @@ The simulation engine is tested using **Vitest**.
 Current tests include:
 
 - Delay propagation
-- Delay absorption
+- Buffer absorption
 - Cascading delays
 - Independent aircraft rotations
 - Aircraft location validation
+- Flight cancellation
+- Aircraft availability after cancellation
+- Downstream cancellation propagation
 - Event generation
 - Event ordering
 
@@ -267,6 +291,12 @@ Update Aircraft State
         ▼
 
 Generate Events
+
+        │
+
+        ▼
+
+Calculate Operational Metrics
 
         │
 
@@ -525,6 +555,8 @@ The simulator currently records:
 - Technical disruptions
 - Crew disruptions
 - Delay events
+- Flight cancellations
+- Aircraft unavailable cancellations
 - Departures
 - Arrivals
 
@@ -570,6 +602,22 @@ JSON Response
         ▼
 
 Client
+```
+Example response:
+
+```json
+{
+    "flights": [...],
+    "aircrafts": [...],
+    "events": [...],
+    "metrics": {
+        "averageDelay": 1.25,
+        "onTimeFlights": 8,
+        "delayedFlights": 3,
+        "cancelledFlights": 1,
+        "aircraftUtilization": 71
+    }
+}
 ```
 
 ---
@@ -695,6 +743,7 @@ airline-ops-sim/
 │   ├── clock.test.ts
 │   ├── data.ts
 │   ├── disruptions.ts
+│   ├── metrics.ts
 │   └── types.ts
 │
 │   ├── App.tsx
@@ -815,6 +864,9 @@ npm test
 - Turnaround modelling
 - Delay propagation
 - Buffer absorption
+- Flight cancellation
+- Operational metrics
+- Aircraft utilization
 - Event logging
 - Automated testing
 - Express REST API
@@ -828,10 +880,7 @@ npm test
 
 ## 🚧 In Progress
 
-- Flight cancellations
 - Cost modelling
-- Airport operational metrics
-- Aircraft utilization
 
 ---
 
@@ -866,7 +915,11 @@ The simulator is intended to evolve into a more complete airline operations plat
 
 Planned capabilities include:
 
-- Flight cancellations
+- Passenger misconnections
+- Airport congestion
+- Gate assignment
+- Maintenance scheduling
+- Crew duty-hour regulations
 - Airport closures
 - Diversions
 - Maintenance scheduling
@@ -910,10 +963,12 @@ Current capabilities include:
 - Aircraft rotations
 - Delay propagation
 - Schedule buffer absorption
-- Configurable disruptions
+- Flight cancellation logic
+- Aircraft availability validation
+- Configurable operational disruptions
 - Structured event timeline
+- Operational metrics
 - Express REST API
-- JSON communication
 - Automated testing
 
-The current focus is expanding the operational simulation before developing the React operations dashboard and integrating PostgreSQL for persistent simulation storage.
+Current focus: Building a React operations dashboard to visualize flight operations, simulation events, and operational metrics before integrating PostgreSQL for persistent simulation storage.

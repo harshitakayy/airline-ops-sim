@@ -228,7 +228,10 @@ Every significant operation is recorded as a structured simulation event.
 Examples include:
 
 - Weather disruptions
+- Technical disruptions
+- Crew disruptions
 - Flight delays
+- Flight cancellations
 - Departures
 - Arrivals
 
@@ -242,3 +245,98 @@ This allows the same event history to be reused by:
 - React timeline visualization
 - Testing
 - Future analytics modules
+
+---
+
+## Cancellation Threshold
+
+Flights are cancelled when their accumulated delay exceeds a configurable threshold.
+
+Example:
+
+```ts
+const CANCELLATION_THRESHOLD = 6;
+```
+
+### Reason
+
+In reality, airlines cannot indefinitely delay flights.
+
+Introducing a cancellation threshold prevents unrealistic simulations where a flight continues to operate after excessive delays. It also allows downstream operational impacts to be modelled more realistically.
+
+---
+
+## Aircraft State Determines Operations
+
+Flights are not evaluated independently.
+
+Before a flight departs, the simulator verifies the state of its assigned aircraft.
+
+Required conditions include:
+
+- Aircraft exists
+- Aircraft is grounded
+- Aircraft is at the correct airport
+- Previous flight has completed successfully
+
+### Reason
+
+Using aircraft state rather than scheduled time alone prevents impossible situations such as an aircraft operating multiple flights simultaneously or departing from the wrong airport.
+
+---
+
+## Downstream Cancellation
+
+If a flight is cancelled, later flights in the same aircraft rotation may also be cancelled.
+
+### Reason
+
+A cancelled flight prevents the aircraft from reaching its next scheduled departure airport.
+
+Cancelling dependent flights models aircraft unavailability without introducing unrealistic aircraft repositioning or teleportation.
+
+---
+
+## Delay Propagation After Landing
+
+Delay propagation is calculated only after the previous flight has landed.
+
+### Reason
+
+The actual arrival time of a flight cannot be known while it is still airborne or waiting to depart.
+
+Waiting until landing ensures downstream departure calculations are based on confirmed aircraft availability rather than predicted arrival times.
+
+This keeps the simulation consistent with the event-driven nature of airline operations.
+
+---
+
+## Metrics Calculated After Simulation
+
+Operational metrics are generated only after the simulation clock finishes.
+
+Conceptually:
+
+```text
+Run Simulation
+
+↓
+
+Generate Events
+
+↓
+
+Calculate Metrics
+
+↓
+
+Return Results
+```
+
+### Reason
+
+Metrics summarize the completed simulation rather than influencing it.
+
+Separating analytics from simulation logic keeps responsibilities independent and allows additional reports to be added without modifying the simulation engine.
+
+---

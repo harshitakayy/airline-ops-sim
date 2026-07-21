@@ -28,51 +28,69 @@
 
                 runSimulation()
 
-                        │
+                            │
 
-        ┌───────────────┴────────────────┐
+                            ▼
 
-        ▼                                ▼
+                     Create Fresh Simulation State
 
- Apply Disruptions                 Simulation Clock
+                            │
 
-        │                              (tick)
+                            ▼
 
-        ▼                                │
+                     Apply Disruptions
 
- Weather / Crew /                 Process Every Flight
- Technical                               │
+                            │
 
-        │                ┌───────────────┴───────────────┐
+                            ▼
 
-        ▼                ▼                               ▼
+                     Weather / Crew / Technical
 
- Record Disruption   Departure Logic             Arrival Logic
-      Events               │                           │
+                            │
 
-                            └──────────────┬──────────────┘
+                            ▼
 
-                                           ▼
+                     Simulation Clock
 
-                              Update Aircraft State
+                     (tick 0 → 24)
 
-                                           ▼
+                            │
 
-                              Record Flight Events
+                            ▼
 
-                                           ▼
+                     Process Every Flight
 
-                              Return Simulation State
+                            │
 
-                                           ▼
+                     ┌──────┴───────────────┐
 
-                                   JSON Response
+                     ▼                      ▼
 
-                                           │
+                     Departure Logic    Arrival Logic
 
-                                           ▼
+                     │                      │
 
-                                         Client
+                     └──────────┬───────────┘
+
+                            ▼
+
+                     Update Aircraft State
+
+                            ▼
+
+                     Generate Events
+
+                            ▼
+
+                     Calculate Metrics
+
+                            ▼
+
+                     Return Simulation State
+
+                            ▼
+
+                     JSON Response
 ```
 
 ---
@@ -93,9 +111,13 @@
 - Simulation clock
 - Aircraft rotations
 - Delay propagation
+- Schedule buffer absorption
+- Flight cancellation logic
+- Aircraft availability validation
 - Turnaround dependency handling
 - Modular disruption system
 - Structured event logging
+- Operational metrics generation
 
 ### Disruption System
 
@@ -107,9 +129,12 @@
 ### Testing
 
 - Vitest
-- Unit tests for delay propagation
-- Unit tests for aircraft location enforcement
-- Unit tests for simulation events
+- Delay propagation tests
+- Buffer absorption tests
+- Flight cancellation tests
+- Aircraft availability tests
+- Event generation tests
+- Operational metrics tests
 
 ---
 
@@ -148,10 +173,10 @@
 
  Simulation Engine   PostgreSQL        External APIs
         │                                 │
-        │                                 ├── Weather API
-        │                                 ├── Airport Data
-        │                                 └── Flight Data
-        │
+        ├── Simulation Clock
+        ├── Disruption Engine
+        ├── Event Generator
+        └── Metrics Engine
         ▼
 
   Simulation Pipeline
@@ -159,10 +184,12 @@
         │
 
         ├── Apply Disruptions
-        ├── Delay Propagation
+        ├── Flight Scheduling
         ├── Aircraft Rotations
+        ├── Delay Propagation
+        ├── Cancellation Handling
         ├── Event Generation
-        ├── Cost Analysis
+        ├── Operational Metrics
         └── Simulation Results
 
                           │
@@ -184,20 +211,22 @@
 
 ### Simulation Engine
 
-- Flight cancellations
 - Airport closures
 - Diversion handling
 - Maintenance scheduling
-- Aircraft utilization analysis
+- Passenger connections
+- Gate assignment
 - Operational cost calculation
+- Recovery strategy optimization
 
 ### Frontend
 
 - React operations dashboard
-- Interactive airport map
-- Flight timeline visualization
+- KPI cards
+- Flight status table
 - Event timeline
-- Disruption controls
+- Interactive airport map
+- Simulation controls
 - Simulation configuration panel
 
 ### Backend
@@ -205,7 +234,9 @@
 - PostgreSQL persistence
 - Historical simulation storage
 - User-defined scenarios
+- Scenario management
 - Authentication
+- Metrics persistence
 
 ### Infrastructure
 

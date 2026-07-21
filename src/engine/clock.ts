@@ -1,6 +1,7 @@
 import { createSimulationData } from "./data";
-import type { Flight, Aircraft, SimulationEvent, SimulationOptions, Disruption } from "./types";
+import type { Flight, Aircraft, SimulationEvent, SimulationOptions, Disruption, SimulationMetrics } from "./types";
 import { applyDisruptions } from "./disruptions";
+import { calculateMetrics } from "./metrics";
 
 function getAircraft(flight: Flight, aircrafts: Aircraft[]): Aircraft | undefined 
 {
@@ -132,7 +133,7 @@ function tick(currentTime: number, flights: Flight[], aircrafts: Aircraft[], eve
     }
 }
 
-export function runSimulation(data= createSimulationData(), options?: SimulationOptions): {flights: Flight[]; aircrafts: Aircraft[]; events: SimulationEvent[]}
+export function runSimulation(data= createSimulationData(), options?: SimulationOptions): {flights: Flight[]; aircrafts: Aircraft[]; events: SimulationEvent[]; metrics: SimulationMetrics;}
 {
     let disruptions: Disruption[]= [];
     if (options?.disruptions) 
@@ -143,8 +144,9 @@ export function runSimulation(data= createSimulationData(), options?: Simulation
     {
         tick(currentTime, data.flights, data.aircrafts, events);
     }
+    const metrics = calculateMetrics(data.flights, data.aircrafts);
 
-    return {flights: data.flights, aircrafts: data.aircrafts ,events};
+    return {flights: data.flights, aircrafts: data.aircrafts,events, metrics};
 }
 
 /*const result= runSimulation();

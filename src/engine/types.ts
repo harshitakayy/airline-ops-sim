@@ -57,3 +57,10 @@ export interface Disruption{
     delayHours: number;
     description: string;
 }
+export interface SimulationMetrics {
+    averageDelay: number;
+    onTimeFlights: number;
+    delayedFlights: number;
+    cancelledFlights: number;
+    aircraftUtilization: number;
+}

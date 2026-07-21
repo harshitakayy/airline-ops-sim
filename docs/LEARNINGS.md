@@ -91,6 +91,117 @@ Aircraft still becomes available before Flight B's scheduled departure.
 
 Flight B leaves on time.
 ```
+---
+
+## Flight Cancellation
+
+Real airline operations cannot always recover from large delays.
+
+The simulator now supports flight cancellation when a flight's accumulated delay exceeds a predefined threshold.
+
+Example:
+
+```text
+Delay = 6 hours
+
+↓
+
+Flight cancelled
+
+↓
+
+Aircraft remains at origin
+```
+## Aircraft Availability
+
+A flight cannot depart simply because its scheduled departure time has arrived.
+
+The assigned aircraft must also be physically available at the departure airport.
+
+Example:
+
+```text
+Flight A
+
+↓
+
+Cancelled
+
+↓
+
+Aircraft never reaches Airport B
+
+↓
+
+Flight B cannot operate
+```
+
+### What I learned
+
+Aircraft rotations create dependencies between flights.
+
+A disruption affecting one flight can prevent later flights from operating even if those later flights have no direct disruption.
+
+---
+
+## Flight Dependencies
+
+Each flight depends on the previous flight within the aircraft's rotation.
+
+The simulator checks the previous flight before calculating departures.
+
+Possible states include:
+
+```text
+Previous Flight
+
+↓
+
+Landed
+    → Continue normally
+
+Cancelled
+    → Cancel downstream flight
+
+Scheduled / Departed
+    → Wait until aircraft becomes available
+```
+
+### What I learned
+
+Aircraft movement is state-driven rather than purely time-driven.
+
+The status of previous flights determines whether later flights are able to operate.
+
+---
+
+## Operational Metrics
+
+After the simulation completes, the engine calculates summary statistics describing the overall operational performance.
+
+Current metrics include:
+
+- Average delay
+- On-time flights
+- Delayed flights
+- Cancelled flights
+- Aircraft utilization
+
+### What I learned
+
+Raw simulation events are useful for debugging, but operational metrics provide a concise summary of system performance.
+
+This separation mirrors real airline operations software, where detailed event logs and high-level KPIs serve different purposes.
+
+---
+
+### What I learned
+
+Cancellation is a business rule rather than a scheduling rule.
+
+Instead of endlessly delaying a flight, the simulator can terminate it and prevent unrealistic operations.
+
+---
 
 ### What I learned
 
@@ -215,7 +326,8 @@ export type EventType =
     | "delay"
     | "weather"
     | "technical"
-    | "crew";
+    | "crew"
+    | "cancellation";
 ```
 
 ### What I learned
