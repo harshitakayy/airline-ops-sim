@@ -1,7 +1,9 @@
 import express from "express";
 import { runSimulation } from "../src/engine/clock";
+import cors from "cors";
 
 const app= express();
+app.use(cors());
 app.use(express.json());
 let simulation= runSimulation();
 
@@ -20,6 +22,10 @@ app.get("/flights/:id",(req,res)=>{
 
 app.get("/aircraft",(req,res)=>{
     res.json(simulation.aircrafts);
+});
+
+app.get("/metrics", (req, res) => {
+    res.json(simulation.metrics);
 });
 
 app.get("/events",(req,res)=>{

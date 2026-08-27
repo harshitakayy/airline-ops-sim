@@ -971,4 +971,4 @@ Current capabilities include:
 - Express REST API
 - Automated testing
 
-Current focus: Building a React operations dashboard to visualize flight operations, simulation events, and operational metrics before integrating PostgreSQL for persistent simulation storage.
+Current focus: Expanding the React dashboard with richer operational views while integrating PostgreSQL for persistent simulation storage, followed by Docker and CI/CD.
