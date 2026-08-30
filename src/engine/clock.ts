@@ -1,5 +1,5 @@
 import { createSimulationData } from "./data";
-import type { Flight, Aircraft, SimulationEvent, SimulationOptions, Disruption, SimulationMetrics } from "./types";
+import type { Flight, Aircraft, SimulationEvent, SimulationOptions, Disruption, SimulationData } from "./types";
 import { applyDisruptions } from "./disruptions";
 import { calculateMetrics } from "./metrics";
 
@@ -133,8 +133,11 @@ function tick(currentTime: number, flights: Flight[], aircrafts: Aircraft[], eve
     }
 }
 
-export function runSimulation(data= createSimulationData(), options?: SimulationOptions): {flights: Flight[]; aircrafts: Aircraft[]; events: SimulationEvent[]; metrics: SimulationMetrics;}
+export async function runSimulation(data?: SimulationData, options?: SimulationOptions)
 {
+    if(!data)
+        data=await createSimulationData();
+    
     let disruptions: Disruption[]= [];
     if (options?.disruptions) 
         disruptions = options.disruptions;

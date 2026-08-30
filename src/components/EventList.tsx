@@ -1,7 +1,14 @@
-import "./EventList.css";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
 interface Event {
-  timestamp: number;
+  time: number;
+  type: string;
+  flightId?: string;
   message: string;
 }
 
@@ -9,50 +16,72 @@ interface EventListProps {
   events: Event[];
 }
 
-const getEventIcon = (message: string) => {
-  const text = message.toLowerCase();
+function getEventIcon(type: string) {
+  switch (type) {
+    case "departure":
+      return "↗";
 
-  if (text.includes("depart")) return "🛫";
-  if (text.includes("land")) return "🛬";
-  if (text.includes("delay")) return "🟡";
-  if (text.includes("cancel")) return "❌";
+    case "arrival":
+      return "↘";
 
-  return "•";
-};
+    case "delay":
+      return "◷";
 
-export default function EventList({ events }: EventListProps) {
+    case "cancellation":
+      return "×";
+
+    case "weather":
+      return "☁";
+
+    case "technical":
+      return "⚙";
+
+    case "crew":
+      return "◉";
+
+    default:
+      return "•";
+  }
+}
+
+function EventList({ events }: EventListProps) {
   return (
-    <div className="event-panel">
-      <div className="panel-header">
-        <h2>Recent Events</h2>
-      </div>
+    <Card className="dashboard-card">
+      <CardHeader className="dashboard-card-header">
+        <CardTitle className="dashboard-card-title">
+          Recent Events
+        </CardTitle>
+      </CardHeader>
 
-      <div className="event-list">
+      <CardContent className="events-card-content">
         {events.length === 0 ? (
-          <p className="empty-events">No events available.</p>
+          <div className="empty-state">
+            No events available.
+          </div>
         ) : (
-          events
-            .slice()
-            .reverse()
-            .map((event, index) => (
-              <div className="event-item" key={index}>
-                <span className="event-icon">
-                  {getEventIcon(event.message)}
-                </span>
+          <div className="events-list">
+            {[...events].reverse().map((event, index) => (
+              <div className="event-item" key={`${event.time}-${index}`}>
+                <div className="event-icon">
+                  {getEventIcon(event.type)}
+                </div>
 
                 <div className="event-content">
-                  <span className="event-message">
+                  <p className="event-message">
                     {event.message}
-                  </span>
+                  </p>
 
                   <span className="event-time">
-                    Hour {event.timestamp}
+                    Simulation hour {event.time}
                   </span>
                 </div>
               </div>
-            ))
+            ))}
+          </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
+
+export default EventList;

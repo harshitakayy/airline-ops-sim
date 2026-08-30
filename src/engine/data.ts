@@ -1,4 +1,5 @@
 import type { Airport, Aircraft, Flight } from "./types";
+import { getData } from "../db/data";
 const BOM: Airport = {
     id: "BOM",
     name: "Mumbai",
@@ -111,11 +112,10 @@ function createAircrafts(flights: Flight[]): Aircraft[]
 export const aircrafts= createAircrafts(flights);
 export const airports: Airport[]= [BOM, DEL, BLR, HYD];
 
-export function createSimulationData()
+export async function createSimulationData()
 {
-    const flights = createFlights();
-    const aircrafts= createAircrafts(flights);
+    const data=await getData();
+    return data;
 
-    return {flights,aircrafts};
 }
 

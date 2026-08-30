@@ -1,106 +1,373 @@
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
+  margin: 0;
   background: #f5f7fb;
+  color: #172033;
   font-family:
+    "Geist Variable",
     Inter,
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  color: #111827;
 }
 
-#root {
-  min-height: 100vh;
+.app-shell {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 40px 48px 56px;
 }
 
-.app {
-  max-width: 1500px;
-  margin: auto;
-  padding: 40px;
+/* Header */
+
+.page-header {
+  margin-bottom: 28px;
 }
 
-/* ---------------- Header ---------------- */
-
-.header {
-  margin-bottom: 32px;
-}
-
-.header h1 {
-  font-size: 34px;
+.page-header h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
   font-weight: 700;
-  color: #111827;
+  letter-spacing: -0.7px;
+  color: #172033;
 }
 
-.header p {
-  margin-top: 8px;
+.page-header p {
+  margin: 8px 0 0;
+  font-size: 15px;
   color: #6b7280;
-  font-size: 16px;
 }
 
-/* ---------------- Metrics ---------------- */
+/* Metrics */
 
 .metrics-section {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
-/* ---------------- Dashboard ---------------- */
+/* Main layout */
 
-.dashboard {
+.dashboard-grid {
   display: grid;
-  grid-template-columns: 2.2fr 1fr;
+  grid-template-columns: minmax(0, 2.3fr) minmax(300px, 1fr);
   gap: 24px;
   align-items: start;
 }
 
-/* ---------------- Panels ---------------- */
-
-.panel {
-  background: white;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
+.main-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.panel-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
-  background: white;
+.side-column {
+  min-width: 0;
 }
 
-.panel-header h2 {
-  font-size: 18px;
+/* Shared cards */
+
+.metric-card,
+.dashboard-card {
+  border: 1px solid #e2e6ed !important;
+  background: #ffffff !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Metrics */
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric-card-content {
+  padding: 20px 22px !important;
+}
+
+.metric-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.metric-value {
+  margin: 7px 0 0;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #172033;
+}
+
+/* Card headers */
+
+.dashboard-card-header {
+  padding: 18px 22px !important;
+  border-bottom: 1px solid #e8ebf0;
+}
+
+.dashboard-card-title {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  color: #172033;
+}
+
+/* Flights table */
+
+.flight-table-wrapper {
+  overflow-x: auto;
+}
+
+.flight-table {
+  width: 100%;
+}
+
+.flight-table th {
+  height: 44px;
+  padding: 0 22px !important;
+  background: #fafbfc;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.flight-table td {
+  height: 56px;
+  padding: 0 22px !important;
+  color: #263247;
+  font-size: 14px;
+}
+
+.flight-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.flight-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.flight-id {
+  font-weight: 600;
+  color: #172033;
+}
+
+.route {
+  color: #475569;
+}
+
+.aircraft-id {
+  color: #475569;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-landed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-departed {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.status-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status-scheduled {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.delay-none {
+  color: #94a3b8;
+}
+
+.delay-value {
+  color: #b45309;
   font-weight: 600;
 }
 
-.panel-body {
-  padding: 0;
+/* Aircraft */
+
+.aircraft-list {
+  padding: 6px 0;
 }
 
-/* ---------------- Responsive ---------------- */
+.aircraft-item {
+  padding: 17px 22px;
+}
 
-@media (max-width: 1100px) {
+.aircraft-item + .aircraft-item {
+  border-top: 1px solid #edf0f4;
+}
 
-  .dashboard {
+.aircraft-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aircraft-id {
+  font-weight: 700;
+  color: #172033;
+}
+
+.aircraft-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.aircraft-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.aircraft-status.airborne {
+  color: #2563eb;
+}
+
+.aircraft-status.airborne::before {
+  background: #3b82f6;
+}
+
+.aircraft-airport {
+  margin: 7px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Events */
+
+.events-card-content {
+  padding: 0 !important;
+}
+
+.events-list {
+  max-height: 430px;
+  overflow-y: auto;
+}
+
+.event-item {
+  display: flex;
+  gap: 14px;
+  padding: 15px 22px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.event-item:last-child {
+  border-bottom: 0;
+}
+
+.event-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f1f5f9;
+  font-size: 14px;
+}
+
+.event-content {
+  min-width: 0;
+}
+
+.event-message {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.event-time {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.empty-state {
+  padding: 36px 22px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Responsive */
+
+@media (max-width: 1050px) {
+  .app-shell {
+    padding: 32px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .app-shell {
+    padding: 24px 16px 40px;
+  }
+
+  .page-header h1 {
+    font-size: 27px;
+  }
+
+  .metrics-grid {
     grid-template-columns: 1fr;
   }
 
-}
-
-@media (max-width: 700px) {
-
-  .app {
-    padding: 20px;
+  .dashboard-grid {
+    gap: 18px;
   }
 
-  .header h1 {
-    font-size: 28px;
+  .flight-table th,
+  .flight-table td {
+    padding: 0 14px !important;
   }
-
 }

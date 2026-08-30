@@ -4,18 +4,14 @@ import "./App.css";
 import FlightTable from "./components/FlightTable";
 import MetricCard from "./components/MetricCard";
 import EventList from "./components/EventList";
+import AircraftPanel from "./components/AircraftPanel";
 
-interface Flight {
-  flightNumber: string;
-  origin: string;
-  destination: string;
-  aircraftId: string;
-  status: string;
-  delay: number;
-}
+import type { Flight, Aircraft } from "./engine/types";
 
 interface Event {
-  timestamp: number;
+  time: number;
+  type: string;
+  flightId?: string;
   message: string;
 }
 
@@ -30,6 +26,8 @@ interface SimulationMetrics {
 export default function App() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
+
   const [metrics, setMetrics] = useState<SimulationMetrics>({
     onTimeFlights: 0,
     delayedFlights: 0,
@@ -39,43 +37,43 @@ export default function App() {
   });
 
   useEffect(() => {
-    fetch("http://localhost:3000/flights")
+    fetch("http://localhost:3000/simulation")
       .then((res) => res.json())
-      .then(setFlights);
-
-    fetch("http://localhost:3000/events")
-      .then((res) => res.json())
-      .then(setEvents);
-
-    fetch("http://localhost:3000/metrics")
-      .then((res) => res.json())
-      .then(setMetrics);
+      .then((data) => {
+        setFlights(data.flights);
+        setEvents(data.events);
+        setAircrafts(data.aircrafts);
+        setMetrics(data.metrics);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch simulation:", err);
+      });
   }, []);
 
   return (
-    <div className="app">
-      <div className="header">
-        <h1>Airline Operations Dashboard</h1>
-        <p>Flight Rotation & Delay Simulation</p>
-      </div>
+    <main className="app-shell">
+      <header className="page-header">
+        <div>
+          <h1>Airline Operations Dashboard</h1>
+          <p>Flight Rotation & Delay Simulation</p>
+        </div>
+      </header>
 
-      <div className="metrics-section">
+      <section className="metrics-section">
         <MetricCard metrics={metrics} />
-      </div>
+      </section>
 
-      <div className="dashboard">
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Flights</h2>
-          </div>
+      <section className="dashboard-grid">
+        <div className="main-column">
+          <FlightTable flights={flights} />
 
-          <div className="panel-body">
-            <FlightTable flights={flights} />
-          </div>
+          <EventList events={events} />
         </div>
 
-        <EventList events={events} />
-      </div>
-    </div>
+        <aside className="side-column">
+          <AircraftPanel aircrafts={aircrafts} />
+        </aside>
+      </section>
+    </main>
   );
 }

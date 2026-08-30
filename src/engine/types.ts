@@ -64,3 +64,7 @@ export interface SimulationMetrics {
     cancelledFlights: number;
     aircraftUtilization: number;
 }
+export interface SimulationData {
+    flights: Flight[];
+    aircrafts: Aircraft[];
+}

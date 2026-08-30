@@ -1,5 +1,4 @@
-import "./MetricCard.css";
-import { Plane, Clock3, CircleX, Activity } from "lucide-react";
+import { Card, CardContent } from "./ui/card";
 
 interface SimulationMetrics {
   onTimeFlights: number;
@@ -19,46 +18,39 @@ export default function MetricCard({ metrics }: MetricCardProps) {
     metrics.delayedFlights +
     metrics.cancelledFlights;
 
-  const cards = [
-    {
-      title: "Flights",
-      value: totalFlights,
-      icon: <Plane size={20} />,
-    },
-    {
-      title: "Avg Delay",
-      value: `${metrics.averageDelay.toFixed(1)} hr`,
-      icon: <Clock3 size={20} />,
-    },
-    {
-      title: "Cancelled",
-      value: metrics.cancelledFlights,
-      icon: <CircleX size={20} />,
-    },
-    {
-      title: "Utilization",
-      value: `${metrics.aircraftUtilization.toFixed(0)}%`,
-      icon: <Activity size={20} />,
-    },
-  ];
-
   return (
-    <div className="metric-grid">
-      {cards.map((card) => (
-        <div className="metric-card" key={card.title}>
-          <div className="metric-top">
-            <span className="metric-title">{card.title}</span>
+    <div className="metrics-grid">
+      <Card className="metric-card">
+        <CardContent className="metric-card-content">
+          <p className="metric-label">Flights</p>
+          <p className="metric-value">{totalFlights}</p>
+        </CardContent>
+      </Card>
 
-            <div className="metric-icon">
-              {card.icon}
-            </div>
-          </div>
+      <Card className="metric-card">
+        <CardContent className="metric-card-content">
+          <p className="metric-label">Average Delay</p>
+          <p className="metric-value">
+            {metrics.averageDelay.toFixed(1)} hr
+          </p>
+        </CardContent>
+      </Card>
 
-          <h2 className="metric-value">
-            {card.value}
-          </h2>
-        </div>
-      ))}
+      <Card className="metric-card">
+        <CardContent className="metric-card-content">
+          <p className="metric-label">Cancelled</p>
+          <p className="metric-value">{metrics.cancelledFlights}</p>
+        </CardContent>
+      </Card>
+
+      <Card className="metric-card">
+        <CardContent className="metric-card-content">
+          <p className="metric-label">Aircraft Utilization</p>
+          <p className="metric-value">
+            {Math.round(metrics.aircraftUtilization)}%
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

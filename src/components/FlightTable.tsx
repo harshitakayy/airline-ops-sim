@@ -1,5 +1,20 @@
 import type { Flight } from "../engine/types";
-import "./FlightTable.css";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
+
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 
 interface FlightTableProps {
   flights: Flight[];
@@ -8,59 +23,78 @@ interface FlightTableProps {
 function getStatusClass(status: string) {
   switch (status) {
     case "landed":
-      return "status landed";
+      return "status-badge status-landed";
+
     case "departed":
-      return "status departed";
+      return "status-badge status-departed";
+
     case "cancelled":
-      return "status cancelled";
+      return "status-badge status-cancelled";
+
     default:
-      return "status scheduled";
+      return "status-badge status-scheduled";
   }
 }
 
 function FlightTable({ flights }: FlightTableProps) {
   return (
-    <div className="card">
-      <h2 className="section-title">Flights</h2>
+    <Card className="dashboard-card">
+      <CardHeader className="dashboard-card-header">
+        <CardTitle className="dashboard-card-title">
+          Flights
+        </CardTitle>
+      </CardHeader>
 
-      <table className="flight-table">
-        <thead>
-          <tr>
-            <th>Flight</th>
-            <th>Route</th>
-            <th>Aircraft</th>
-            <th>Status</th>
-            <th>Delay</th>
-          </tr>
-        </thead>
+      <CardContent className="p-0">
+        <div className="flight-table-wrapper">
+          <Table className="flight-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Flight</TableHead>
+                <TableHead>Route</TableHead>
+                <TableHead>Aircraft</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Delay</TableHead>
+              </TableRow>
+            </TableHeader>
 
-        <tbody>
-          {flights.map((flight) => (
-            <tr key={flight.id}>
-              <td>{flight.id}</td>
+            <TableBody>
+              {flights.map((flight) => (
+                <TableRow key={flight.id}>
+                  <TableCell className="flight-id">
+                    {flight.id}
+                  </TableCell>
 
-              <td>
-                {flight.from} → {flight.to}
-              </td>
+                  <TableCell className="route">
+                    {flight.from} → {flight.to}
+                  </TableCell>
 
-              <td>{flight.aircraftId}</td>
+                  <TableCell className="aircraft-id">
+                    {flight.aircraftId}
+                  </TableCell>
 
-              <td>
-                <span className={getStatusClass(flight.status)}>
-                  {flight.status}
-                </span>
-              </td>
+                  <TableCell>
+                    <span className={getStatusClass(flight.status)}>
+                      {flight.status}
+                    </span>
+                  </TableCell>
 
-              <td>
-                {flight.delayHours === 0
-                  ? "-"
-                  : `${flight.delayHours} hr`}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                  <TableCell>
+                    {flight.delayHours === 0 ? (
+                      <span className="delay-none">—</span>
+                    ) : (
+                      <span className="delay-value">
+                        {flight.delayHours} hr
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
