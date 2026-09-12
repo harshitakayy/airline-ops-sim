@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import { applyDisruptions } from "./disruptions";
 import { calculateMetrics } from "./metrics";
+import { calculateFinancialImpact } from "./financial";
 
 function getAircraft(
     flight: Flight,
@@ -268,7 +269,7 @@ function tick(
 
 export async function runSimulation(
     data?: SimulationData,
-    options?: SimulationOptions
+    options: SimulationOptions={}
 ) {
     if (!data) {
         data = await createSimulationData();
@@ -326,10 +327,13 @@ export async function runSimulation(
         data.aircrafts
     );
 
+    const financialImpact = calculateFinancialImpact(data.flights,  options.costAssumptions);
+
     return {
         flights: data.flights,
         aircrafts: data.aircrafts,
         events,
-        metrics
+        metrics,
+        financialImpact
     };
 }

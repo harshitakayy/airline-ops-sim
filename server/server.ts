@@ -1,8 +1,6 @@
 import express from "express";
 import { runSimulation } from "../src/engine/clock";
 import cors from "cors";
-import { getFlights } from "../src/db/flights";
-import { getAircrafts } from "../src/db/aircrafts";
 import { getData } from "../src/db/data";
 
 
@@ -45,9 +43,9 @@ async function start()
         res.json(simulation.events);
     });
 
-    app.post("/simulation/run", (req, res) =>{
+    app.post("/simulation/run", async (req, res) =>{
         console.log(req.body);
-        simulation= runSimulation(undefined,req.body);
+        simulation= await runSimulation(undefined,req.body);
         res.json(simulation);
     });
 

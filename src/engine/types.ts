@@ -48,6 +48,7 @@ export interface SimulationEvent {
 
 export interface SimulationOptions {
     disruptions?: Disruption[];
+    costAssumptions?: CostAssumptions;
 }
 
 export interface Disruption{
@@ -67,4 +68,13 @@ export interface SimulationMetrics {
 export interface SimulationData {
     flights: Flight[];
     aircrafts: Aircraft[];
+}
+export interface CostAssumptions {
+    delayCostPerMinute: number;
+    cancellationCost: number;
+}
+export interface FinancialImpact {
+    delayCost: number;
+    cancellationCost: number;
+    totalEstimatedLoss: number;
 }

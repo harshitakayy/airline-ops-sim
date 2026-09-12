@@ -22,9 +22,9 @@ export function calculateMetrics(flights: Flight[], aircrafts: Aircraft[]): Simu
         totalFlyingMinutes += flyingMinutes;
     }
 
-    const totalSimulationMinutes =flights.length > 0? Math.max(...flights.map(flight =>new Date(flight.scheduledArrival).getTime())) -
-            Math.min(...flights.map(flight =>new Date(flight.scheduledDeparture).getTime())
-            ): 0;
+    const totalSimulationMinutes =flights.length > 0? (Math.max(...flights.map(flight =>new Date(flight.scheduledArrival).getTime())) -
+            Math.min(...flights.map(flight =>new Date(flight.scheduledDeparture).getTime()))
+            )/(60*1000): 0;
 
     const aircraftUtilization =totalSimulationMinutes > 0 && aircrafts.length > 0
             ? (totalFlyingMinutes /(totalSimulationMinutes * aircrafts.length)) * 100: 0;
