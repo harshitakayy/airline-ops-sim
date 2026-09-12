@@ -80,11 +80,11 @@ function FlightTable({ flights }: FlightTableProps) {
                   </TableCell>
 
                   <TableCell>
-                    {flight.delayHours === 0 ? (
+                    {flight.delayMinutes === 0 ? (
                       <span className="delay-none">—</span>
                     ) : (
                       <span className="delay-value">
-                        {flight.delayHours} hr
+                        {flight.delayMinutes} hr
                       </span>
                     )}
                   </TableCell>

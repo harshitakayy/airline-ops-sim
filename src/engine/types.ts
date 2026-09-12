@@ -23,10 +23,10 @@ export interface Flight {
     from: string;
     to: string;
 
-    departureTime: number;
-    arrivalTime: number;
+    scheduledDeparture: string;
+    scheduledArrival: string;
 
-    delayHours: number;
+    delayMinutes: number;
 
     status: FlightStatus;
 }
@@ -40,7 +40,7 @@ export type EventType=
     | "crew"
     | "technical";
 export interface SimulationEvent {
-    time: number;
+    time: string;
     type: EventType;
     flightId?: string;
     message: string;
@@ -54,7 +54,7 @@ export interface Disruption{
     type: "weather"|"technical"|"crew";
     airport?: string;
     aircraftId?:string;
-    delayHours: number;
+    delayMinutes: number;
     description: string;
 }
 export interface SimulationMetrics {

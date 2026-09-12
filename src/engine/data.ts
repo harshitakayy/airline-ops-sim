@@ -35,9 +35,9 @@ function createFlights(): Flight[]
     aircraftId: "VT-XYZ",
     from: "BLR",
     to: "BOM",
-    departureTime: 8,
-    arrivalTime: 10,
-    delayHours: 2,
+    scheduledDeparture: "2026-09-12T08:00:00+05:30",
+    scheduledArrival: "2026-09-12T10:00:00+05:30",
+    delayMinutes: 120,
     status: "scheduled"
     }
 
@@ -46,9 +46,9 @@ function createFlights(): Flight[]
     aircraftId: "VT-XYZ",
     from: "BOM",
     to: "DEL",
-    departureTime: 12,
-    arrivalTime: 14,
-    delayHours: 0,
+    scheduledDeparture: "2026-09-12T12:00:00+05:30",
+    scheduledArrival: "2026-09-12T14:00:00+05:30",
+    delayMinutes: 0,
     status: "scheduled"
     }
 
@@ -57,9 +57,9 @@ function createFlights(): Flight[]
     aircraftId: "VT-XYZ",
     from: "DEL",
     to: "HYD",
-    departureTime: 15,
-    arrivalTime: 16,
-    delayHours: 0,
+    scheduledDeparture: "2026-09-12T15:00:00+05:30",
+    scheduledArrival: "2026-09-12T16:00:00+05:30",
+    delayMinutes: 0,
     status: "scheduled"
     }
 
@@ -68,9 +68,9 @@ function createFlights(): Flight[]
     aircraftId: "VT-ABC",
     from: "BOM",
     to: "HYD",
-    departureTime: 8,
-    arrivalTime: 10,
-    delayHours: 2,
+    scheduledDeparture: "2026-09-12T08:00:00+05:30",
+    scheduledArrival: "2026-09-12T10:00:00+05:30",
+    delayMinutes: 120,
     status: "scheduled"
     }
 
@@ -79,9 +79,9 @@ function createFlights(): Flight[]
     aircraftId: "VT-ABC",
     from: "HYD",
     to: "BLR",
-    departureTime: 12,
-    arrivalTime: 13,
-    delayHours: 0,
+    scheduledDeparture: "2026-09-12T12:00:00+05:30",
+    scheduledArrival: "2026-09-12T13:00:00+05:30",
+    delayMinutes: 0,
     status: "scheduled"
     }
 
