@@ -10,14 +10,14 @@ import type {
 import { applyDisruptions } from "./disruptions";
 import { calculateMetrics } from "./metrics";
 import { calculateFinancialImpact } from "./financial";
+import { reassignFlight } from "./reassignment";
+import { canAircraftOperateFlight } from "./feasibility";
 
 function getAircraft(
     flight: Flight,
     aircrafts: Aircraft[]
 ): Aircraft | undefined {
-    return aircrafts.find(
-        aircraft => aircraft.id === flight.aircraftId
-    );
+    return aircrafts.find(aircraft => aircraft.id === flight.aircraftId);
 }
 
 function getPreviousFlight(
@@ -35,8 +35,8 @@ function getPreviousFlight(
     return aircraft.flights[currentIndex - 1];
 }
 
-const CANCELLATION_THRESHOLD = 360; // 6 hours in minutes
-const TURNAROUND_TIME = 60; // 1 hour in minutes
+const CANCELLATION_THRESHOLD = 360;
+const TURNAROUND_TIME = 60;
 
 function addMinutes(dateString: string, minutes: number): Date {
     const date = new Date(dateString);
@@ -45,17 +45,11 @@ function addMinutes(dateString: string, minutes: number): Date {
 }
 
 function getActualDepartureTime(flight: Flight): Date {
-    return addMinutes(
-        flight.scheduledDeparture,
-        flight.delayMinutes
-    );
+    return addMinutes(flight.scheduledDeparture, flight.delayMinutes);
 }
 
 function getActualArrivalTime(flight: Flight): Date {
-    return addMinutes(
-        flight.scheduledArrival,
-        flight.delayMinutes
-    );
+    return addMinutes(flight.scheduledArrival, flight.delayMinutes);
 }
 
 function handleCancellation(
@@ -67,9 +61,7 @@ function handleCancellation(
         return;
     }
 
-    const scheduledDeparture = new Date(
-        flight.scheduledDeparture
-    );
+    const scheduledDeparture = new Date(flight.scheduledDeparture);
 
     if (currentTime.getTime() < scheduledDeparture.getTime()) {
         return;
@@ -99,19 +91,11 @@ function handleDeparture(
         return;
     }
 
-    const previousFlight = getPreviousFlight(
-        aircraft,
-        flight
-    );
-
-    let actualDepartureTime = getActualDepartureTime(
-        flight
-    );
+    const previousFlight = getPreviousFlight(aircraft, flight);
+    let actualDepartureTime = getActualDepartureTime(flight);
 
     if (previousFlight !== undefined) {
-
         if (previousFlight.status === "cancelled") {
-
             flight.status = "cancelled";
 
             events.push({
@@ -128,37 +112,22 @@ function handleDeparture(
             return;
         }
 
-        const previousArrivalTime =
-            getActualArrivalTime(previousFlight);
+        const previousArrivalTime = getActualArrivalTime(previousFlight);
+        const earliestAvailableTime = new Date(
+            previousArrivalTime.getTime() + TURNAROUND_TIME * 60 * 1000
+        );
 
-        const earliestAvailableTime =
-            new Date(
-                previousArrivalTime.getTime()
-                + TURNAROUND_TIME * 60 * 1000
-            );
-
-        if (
-            earliestAvailableTime.getTime()
-            > actualDepartureTime.getTime()
-        ) {
+        if (earliestAvailableTime.getTime() > actualDepartureTime.getTime()) {
             actualDepartureTime = earliestAvailableTime;
         }
     }
 
-    const scheduledDeparture = new Date(
-        flight.scheduledDeparture
+    const scheduledDeparture = new Date(flight.scheduledDeparture);
+    const propagatedDelay = Math.round(
+        (actualDepartureTime.getTime() - scheduledDeparture.getTime()) / 60000
     );
 
-    const propagatedDelay =
-        Math.round(
-            (
-                actualDepartureTime.getTime()
-                - scheduledDeparture.getTime()
-            ) / 60000
-        );
-
     if (propagatedDelay > flight.delayMinutes) {
-
         flight.delayMinutes = propagatedDelay;
 
         events.push({
@@ -169,10 +138,7 @@ function handleDeparture(
         });
     }
 
-    if (
-        actualDepartureTime.getTime()
-        !== currentTime.getTime()
-    ) {
+    if (actualDepartureTime.getTime() !== currentTime.getTime()) {
         return;
     }
 
@@ -205,18 +171,13 @@ function handleArrival(
         return;
     }
 
-    const actualArrivalTime =
-        getActualArrivalTime(flight);
+    const actualArrivalTime = getActualArrivalTime(flight);
 
-    if (
-        actualArrivalTime.getTime()
-        !== currentTime.getTime()
-    ) {
+    if (actualArrivalTime.getTime() !== currentTime.getTime()) {
         return;
     }
 
     flight.status = "landed";
-
     aircraft.status = "grounded";
     aircraft.currentAirport = flight.to;
 
@@ -235,103 +196,137 @@ function tick(
     events: SimulationEvent[]
 ) {
     for (const flight of flights) {
-
-        const aircraft = getAircraft(
-            flight,
-            aircrafts
-        );
+        const aircraft = getAircraft(flight, aircrafts);
 
         if (!aircraft) {
             continue;
         }
 
-        handleCancellation(
-            flight,
-            currentTime,
-            events
-        );
+        handleCancellation(flight, currentTime, events);
+        handleDeparture(flight, aircraft, currentTime, events);
+        handleArrival(flight, aircraft, currentTime, events);
+    }
+}
 
-        handleDeparture(
-            flight,
-            aircraft,
-            currentTime,
-            events
-        );
+function applyDelayOverrides(
+    flights: Flight[],
+    overrides: NonNullable<SimulationOptions["flightDelayOverrides"]>
+) {
+    for (const override of overrides) {
+        if (!Number.isFinite(override.delayMinutes) || override.delayMinutes < 0) {
+            throw new Error(`Invalid delay override for flight ${override.flightId}`);
+        }
 
-        handleArrival(
-            flight,
-            aircraft,
-            currentTime,
-            events
-        );
+        const flight = flights.find(item => item.id === override.flightId);
+
+        if (!flight) {
+            throw new Error(`Flight not found for delay override: ${override.flightId}`);
+        }
+
+        flight.delayMinutes = override.delayMinutes;
     }
 }
 
 export async function runSimulation(
     data?: SimulationData,
-    options: SimulationOptions={}
+    options: SimulationOptions = {}
 ) {
-    if (!data) {
-        data = await createSimulationData();
-    }
-
-    let disruptions: Disruption[] = [];
-
-    if (options?.disruptions) {
-        disruptions = options.disruptions;
-    }
+    const simulationData = data ?? await createSimulationData();
 
     const events: SimulationEvent[] = [];
 
-    applyDisruptions(
-        data.flights,
-        disruptions,
-        events
-    );
-
-    const startTimes = data.flights.map(
-        flight => new Date(flight.scheduledDeparture)
-    );
-
-    const endTimes = data.flights.map(
-        flight => new Date(flight.scheduledArrival)
-    );
-
-    const startTime = new Date(
-        Math.min(...startTimes.map(date => date.getTime()))
-    );
-
-    const endTime = new Date(
-        Math.max(...endTimes.map(date => date.getTime()))
-        + 24 * 60 * 60 * 1000
-    );
-
-    const currentTime = new Date(startTime);
-
-    while (currentTime <= endTime) {
-
-        tick(
-            new Date(currentTime),
-            data.flights,
-            data.aircrafts,
-            events
-        );
-
-        currentTime.setMinutes(
-            currentTime.getMinutes() + 1
-        );
+    if (options.flightDelayOverrides) {
+        applyDelayOverrides(simulationData.flights, options.flightDelayOverrides);
     }
 
-    const metrics = calculateMetrics(
-        data.flights,
-        data.aircrafts
+    if (options.cancelledFlights) {
+        for (const flightId of options.cancelledFlights) {
+            const flight = simulationData.flights.find(item => item.id === flightId);
+
+            if (!flight) {
+                throw new Error(`Flight not found for cancellation: ${flightId}`);
+            }
+
+            if (flight.status !== "cancelled") {
+                flight.status = "cancelled";
+                events.push({
+                    time: new Date().toISOString(),
+                    type: "cancellation",
+                    flightId,
+                    message: `${flightId} cancelled by scenario`
+                });
+            }
+        }
+    }
+
+    if (options.aircraftReassignments) {
+        for (const reassignment of options.aircraftReassignments) {
+            const flight = simulationData.flights.find(
+                item => item.id === reassignment.flightId
+            );
+            const newAircraft = simulationData.aircrafts.find(
+                aircraft => aircraft.id === reassignment.aircraftId
+            );
+
+            if (!flight || !newAircraft || flight.status !== "scheduled") {
+                continue;
+            }
+
+            const oldAircraft = simulationData.aircrafts.find(
+                aircraft => aircraft.id === flight.aircraftId
+            );
+
+            if (!oldAircraft || oldAircraft.id === newAircraft.id) {
+                continue;
+            }
+
+            if (!canAircraftOperateFlight(newAircraft, flight)) {
+                continue;
+            }
+
+            const oldAircraftId = flight.aircraftId;
+
+            reassignFlight(flight, oldAircraft, newAircraft);
+
+            events.push({
+                time: new Date().toISOString(),
+                type: "reassignment",
+                flightId: flight.id,
+                message: `${flight.id} reassigned from ${oldAircraftId} to ${newAircraft.id}`
+            });
+        }
+    }
+
+    const disruptions: Disruption[] = options.disruptions ?? [];
+    applyDisruptions(simulationData.flights, disruptions, events);
+
+    const startTimes = simulationData.flights.map(
+        flight => new Date(flight.scheduledDeparture).getTime()
+    );
+    const endTimes = simulationData.flights.map(
+        flight => new Date(flight.scheduledArrival).getTime()
     );
 
-    const financialImpact = calculateFinancialImpact(data.flights,  options.costAssumptions);
+    if (simulationData.flights.length > 0) {
+        const startTime = new Date(Math.min(...startTimes));
+        const endTime = new Date(Math.max(...endTimes) + 24 * 60 * 60 * 1000);
+        const currentTime = new Date(startTime);
+
+        while (currentTime <= endTime) {
+            tick(currentTime, simulationData.flights, simulationData.aircrafts, events);
+            currentTime.setMinutes(currentTime.getMinutes() + 1);
+        }
+    }
+
+    const metrics = calculateMetrics(simulationData.flights, simulationData.aircrafts);
+    const financialImpact = calculateFinancialImpact(
+        simulationData.flights,
+        options.costAssumptions
+    );
 
     return {
-        flights: data.flights,
-        aircrafts: data.aircrafts,
+        flights: simulationData.flights,
+        aircrafts: simulationData.aircrafts,
         events,
         metrics,
         financialImpact

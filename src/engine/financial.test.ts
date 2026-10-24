@@ -65,9 +65,9 @@ describe("Financial Impact", () => {
             assumptions
         );
 
-        expect(result.delayCost).toBe(1800000);
+        expect(result.delayCost).toBe(0);
         expect(result.cancellationCost).toBe(200000);
-        expect(result.totalEstimatedLoss).toBe(2000000);
+        expect(result.totalEstimatedLoss).toBe(200000);
     });
 
     it("calculates combined delay and cancellation costs", () => {
@@ -82,8 +82,25 @@ describe("Financial Impact", () => {
             assumptions
         );
 
-        expect(result.delayCost).toBe(2700000);
+        expect(result.delayCost).toBe(900000);
         expect(result.cancellationCost).toBe(200000);
-        expect(result.totalEstimatedLoss).toBe(2900000);
+        expect(result.totalEstimatedLoss).toBe(1100000);
+    });
+
+    it("does not count cancelled flight delay toward delay cost", () => {
+    const flights = [
+        createFlight(120),
+        createFlight(60),
+        createFlight(60, "cancelled")
+    ];
+
+    const result = calculateFinancialImpact(
+        flights,
+        assumptions
+    );
+
+    expect(result.delayCost).toBe(900000);
+    expect(result.cancellationCost).toBe(200000);
+    expect(result.totalEstimatedLoss).toBe(1100000);
     });
 });

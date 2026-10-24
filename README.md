@@ -1,974 +1,324 @@
 # ✈️ Airline Operations Simulator
 
-An airline operations simulator built with **TypeScript**, **Express**, **React**, and **Vite** that models how disruptions propagate through an airline schedule using aircraft rotations, turnaround constraints, and operational events.
+A full-stack airline operations simulation and decision-support project built using TypeScript, React, Express, PostgreSQL, and Python. The system models aircraft rotations, cascading flight delays, operational disruptions, and recovery decisions while integrating external flight observations and machine-learning-based delay-risk prediction.
 
-Instead of simply displaying flight information, this project simulates how real airline operations behave when delays occur. The simulator tracks aircraft movement, flight dependencies, airport operations, and disruption propagation while exposing the simulation through a REST API.
+**Status:** Active Development
 
-The long-term vision is to build an airline operations platform capable of simulating real-world operational scenarios and visualizing them through an interactive dashboard.
+## Overview
 
----
+Airline schedules are interconnected. When an aircraft arrives late, its next flight may be delayed, causing disruptions to propagate through subsequent flights. However, sufficient turnaround time and schedule buffers can absorb some delays.
 
-# Why I Built This
+This project simulates these operational dependencies and explores how alternative decisions can reduce disruption and financial impact.
 
-Most aviation projects available online display flight data or use public APIs.
+The system combines two main components:
 
-I wanted to understand how airline operations software actually works behind the scenes.
+- **Operational simulator:** Models aircraft availability, flight dependencies, turnaround constraints, delay propagation, disruptions, cancellations, and operational metrics.
+- **Data and decision-support pipeline:** Collects external flight observations, stores timestamped records, prepares flight-delay datasets, and connects ML predictions with operational decision logic.
 
-Questions I wanted to answer include:
+## Features
 
-- What happens if an aircraft arrives late?
-- How do delays propagate through an aircraft's rotation?
-- When can a delay be absorbed by schedule buffer?
-- How do weather or technical disruptions affect later flights?
-- How can operational events be visualized?
+### 1. Airline Operations Simulation
 
-Rather than focusing on user interfaces first, I decided to build the simulation engine from the ground up before exposing it through an API and eventually building a dashboard.
+- Time-stepped simulation of scheduled flights.
+- Aircraft rotations and airport-location validation.
+- Aircraft turnaround constraints.
+- Delay propagation across consecutive flights.
+- Schedule-buffer absorption.
+- Weather, crew, and technical disruptions.
+- Flight cancellation and downstream aircraft-availability handling.
+- Structured operational event history.
+- Operational metrics for delays, cancellations, on-time flights, and aircraft utilization.
 
----
+### 2. REST API
 
-# Features
-
-## Simulation Engine
-
-- Airport model
-- Aircraft model
-- Flight model
-- Aircraft rotations
-- Turnaround time modelling
-- Aircraft location tracking
-- Aircraft status tracking
-- Flight departures
-- Flight arrivals
-- Delay propagation
-- Cascading delays
-- Schedule buffer absorption
-- Multiple independent aircraft rotations
-- Flight cancellation based on delay threshold
-- Downstream cancellation due to aircraft unavailability
-- Operational metrics generation
-
----
-
-## Disruption System
-
-The simulator supports configurable operational disruptions.
-
-Currently implemented:
-
-- Weather disruptions
-- Technical disruptions
-- Crew disruptions
-
-The disruption system is modular, allowing new disruption types to be added independently.
-
----
-
-## Event System
-
-Every important operational event is recorded.
-
-Examples include:
-
-- Weather disruptions
-- Technical disruptions
-- Crew disruptions
-- Delay propagation
-- Flight cancellations
-- Aircraft unavailable cancellations
-- Departures
-- Arrivals
-
-The simulator stores structured events instead of relying on console output.
-
----
-
-## Operational Metrics
-
-The simulator generates operational metrics after every simulation run.
-
-Current metrics include:
-
-- Average flight delay
-- On-time flights
-- Delayed flights
-- Cancelled flights
-- Aircraft utilization
-
-These metrics provide a high-level operational summary that will be displayed in the upcoming React operations dashboard.
-
----
-
-## REST API
-
-The simulation engine is exposed through an Express REST API.
-
-Current endpoints:
+An Express API exposes simulation state and operational functionality.
 
 | Method | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/flights` | Retrieve all flights |
-| GET | `/flights/:id` | Retrieve a single flight |
-| GET | `/aircraft` | Retrieve all aircraft |
-| GET | `/events` | Retrieve simulation events |
-| POST | `/simulation/run` | Run a simulation with custom disruptions |
+|---|---|---|
+| GET | `/flights` | Retrieve simulated flights |
+| GET | `/flights/:id` | Retrieve a specific flight |
+| GET | `/aircraft` | Retrieve aircraft state |
+| GET | `/events` | Retrieve operational events |
+| GET | `/metrics` | Retrieve operational metrics |
+| GET | `/simulation` | Retrieve simulation state |
+| POST | `/simulation/run` | Execute a simulation |
+| POST | `/decision/recommend` | Generate an operational recommendation |
+| POST | `/decision/recommend-with-ml` | Evaluate a recommendation using an ML risk prediction |
 
-All communication uses JSON.
+The flight-data API also supports synchronization, observation history, operating-flight aggregation, data-quality checks, and ML dataset export.
 
----
+### 3. External Flight-Data Integration
 
-## Testing
+The project integrates with Aviationstack to retrieve available flight information.
 
-The simulation engine is tested using **Vitest**.
+The pipeline:
 
-Current tests include:
+1. Requests flight observations from the provider.
+2. Tracks synchronization runs and their outcomes.
+3. Stores timestamped observations in PostgreSQL.
+4. Preserves raw provider responses for traceability.
+5. Derives operating-flight identities from codeshare information where possible.
+6. Exposes endpoints for history, data quality, and confirmed-outcome dataset preparation.
 
-- Delay propagation
-- Buffer absorption
-- Cascading delays
-- Independent aircraft rotations
-- Aircraft location validation
-- Flight cancellation
-- Aircraft availability after cancellation
-- Downstream cancellation propagation
-- Event generation
-- Event ordering
+**Limitation:** API coverage and historical access depend on the provider subscription. Stored observations are snapshots, not a complete historical archive. Confirmed arrival outcomes are required before observations can be used as supervised arrival-delay labels.
 
-Every test creates its own simulation scenario, allowing deterministic and isolated testing.
+### 4. Machine Learning
 
----
+The project includes a Python-based flight-delay prediction pipeline.
 
-# Example Rotation
+The existing model uses US domestic flight data from 2015 and predicts the probability that arrival delay will be at least 30 minutes.
 
-```
-Aircraft VT-XYZ
+The workflow includes:
 
-AI101
-BLR → BOM
+- Feature engineering and preprocessing.
+- Chronological training, calibration, validation, and testing.
+- Random Forest classification.
+- Probability calibration.
+- Threshold-based evaluation.
+- Integration with the TypeScript backend through a Python prediction bridge.
 
-      │
+A separate experiment prepares US Bureau of Transportation Statistics (BTS) flight data from January 2026. The cleaned dataset contains 572,599 usable records from 602,953 source rows.
 
-      ▼
+The BTS model is a separate experiment. It should only be described as trained once its training and evaluation scripts have completed successfully.
 
-AI102
-BOM → DEL
+**Important:** The existing model was trained on US data and has not been validated for Indian airline operations. It predicts delay risk, not the exact number of minutes a flight will be delayed.
 
-      │
+### 5. Decision Support
 
-      ▼
+The decision layer evaluates operational alternatives such as continuing with the current plan, cancelling a flight, or reassigning resources where feasible.
 
-AI103
-DEL → HYD
-```
+The intended workflow combines simulation outcomes, delay-risk predictions, and configured cost assumptions.
 
-If AI101 arrives late, the simulator determines whether enough turnaround time exists before AI102 departs.
+Recommendations are experimental decision-support outputs. Their reliability depends on the input data, operational constraints, model assumptions, and cost parameters.
 
-If not, the delay propagates naturally through the remaining rotation.
+### 6. Frontend
 
----
+The React and Vite frontend provides a web interface for interacting with the system and viewing operational information.
 
-# Example Event Timeline
+The frontend communicates with the backend through HTTP APIs rather than accessing the database directly.
 
-```
-Weather Disruption
-BLR (+3h)
-
-        │
-
-        ▼
-
-AI101 Delayed
-
-        │
-
-        ▼
-
-AI102 Delayed
-
-        │
-
-        ▼
-
-AI103 Delayed
-
-        │
-
-        ▼
-
-AI101 Departure
-
-        │
-
-        ▼
-
-AI101 Arrival
-
-        │
-
-        ▼
-
-AI102 Departure
-
-        │
-
-        ▼
-
-...
-```
-
-The simulator records both the **cause** (weather) and the resulting operational events, allowing the complete sequence of the simulation to be visualized.
-
----
-
-# How the Simulation Works
-
-The simulator models airline operations by advancing a simulation clock one hour at a time.
-
-During every simulation step, each scheduled flight is evaluated to determine whether it can depart or arrive based on aircraft availability, turnaround constraints, airport location, and accumulated delays.
-
-Conceptually, the simulation executes the following pipeline:
+## Architecture
 
 ```text
-runSimulation()
-
-        │
-
-        ▼
-
-Create Simulation Data
-
-        │
-
-        ▼
-
-Apply Disruptions
-
-        │
-
-        ▼
-
-Weather
-Crew
-Technical
-
-        │
-
-        ▼
-
-Simulation Clock
-
-        │
-
-        ▼
-
-Process Every Flight
-
-        │
-
-        ▼
-
-Calculate Aircraft Availability
-
-        │
-
-        ▼
-
-Handle Departures
-
-        │
-
-        ▼
-
-Handle Arrivals
-
-        │
-
-        ▼
-
-Update Aircraft State
-
-        │
-
-        ▼
-
-Generate Events
-
-        │
-
-        ▼
-
-Calculate Operational Metrics
-
-        │
-
-        ▼
-
-Return Simulation State
+                    React Frontend
+                          |
+                      HTTP / JSON
+                          |
+                          v
+                   Express REST API
+                          |
+          +---------------+----------------+
+          |               |                |
+          v               v                v
+    Simulation API   Decision API     Flight Data API
+          |               |                |
+          v               v                v
+    Simulation Engine  Decision Layer  Aviationstack
+          |               |                |
+          v               v                v
+    Flight State     Cost / Risk       PostgreSQL
+    Events           Evaluation            |
+    Metrics               |                v
+                          |          Flight Observations
+                          v          Synchronization Runs
+                    Python ML Bridge
+                          |
+                          v
+                       ML Model
 ```
 
----
-
-## Simulation Clock
-
-The engine advances through an entire day using a central simulation clock.
-
-```ts
-for (let currentTime = 0; currentTime <= 24; currentTime++) {
-    tick(currentTime, flights, aircrafts, events);
-}
-```
-
-At every simulated hour the engine evaluates every flight and determines whether operational conditions allow it to depart or arrive.
-
----
-
-## Aircraft Rotations
-
-Each aircraft stores the sequence of flights it is scheduled to operate.
-
-Example:
-
-```text
-VT-XYZ
-
-AI101
-BLR → BOM
-
-↓
-
-AI102
-BOM → DEL
-
-↓
-
-AI103
-DEL → HYD
-```
-
-Instead of treating every flight independently, the simulator understands that the same aircraft must physically complete one flight before operating the next.
-
----
-
-## Turnaround Constraints
-
-An aircraft cannot immediately depart after landing.
-
-The simulator models turnaround time before the next departure becomes possible.
-
-Conceptually:
-
-```text
-Earliest Departure
-
-=
-
-Previous Flight Arrival
-
-+
-
-Previous Flight Delay
-
-+
-
-Turnaround Time
-```
-
-If this calculated time is later than the scheduled departure, the delay propagates.
-
----
-
-## Delay Propagation
-
-The simulator determines each flight's actual departure time by comparing:
-
-- Scheduled departure
-- Existing delay
-- Aircraft availability
-
-Conceptually:
-
-```text
-Actual Departure
-
-=
-
-max(
-
-Scheduled Departure,
-
-Aircraft Available Time
-
-)
-```
-
-This naturally produces cascading delays through an aircraft rotation.
-
----
-
-## Buffer Absorption
-
-Not every delay propagates.
-
-If sufficient ground time exists between flights, the aircraft can recover before the next scheduled departure.
-
-Example:
-
-```text
-Flight A
-
-↓
-
-Delayed by 1 hour
-
-↓
-
-Aircraft still becomes available
-
-↓
-
-Flight B departs on schedule
-```
-
-This reflects how airlines use schedule buffer to improve operational robustness.
-
----
-
-## Aircraft Validation
-
-Before allowing a departure, the simulator verifies that:
-
-- The aircraft exists.
-- The aircraft is grounded.
-- The aircraft is currently located at the correct airport.
-- The flight is still scheduled.
-
-These checks prevent impossible flight movements.
-
----
-
-# Disruption System
-
-The simulator supports configurable operational disruptions.
-
-Each disruption modifies the simulation before the clock begins advancing.
-
-```text
-runSimulation()
-
-↓
-
-Apply Disruptions
-
-↓
-
-Weather
-
-Crew
-
-Technical
-
-↓
-
-Simulation Clock
-```
-
-The disruption system is intentionally separated from the simulation clock.
-
-This keeps the clock responsible only for advancing time while disruption logic remains modular.
-
----
-
-## Weather Disruptions
-
-Weather disruptions affect flights departing from a specific airport.
-
-Example:
-
-```json
-{
-    "type": "weather",
-    "airport": "BLR",
-    "delayHours": 3,
-    "reason": "Thunderstorm"
-}
-```
-
-Every affected flight receives the specified initial delay before the simulation begins.
-
----
-
-## Technical Disruptions
-
-Technical disruptions affect a specific aircraft.
-
-Example:
-
-```json
-{
-    "type": "technical",
-    "aircraftId": "VT-XYZ",
-    "delayHours": 5,
-    "reason": "Hydraulic Failure"
-}
-```
-
-Only flights operated by that aircraft are affected.
-
----
-
-## Crew Disruptions
-
-Crew disruptions currently operate similarly to aircraft disruptions.
-
-Example:
-
-```json
-{
-    "type": "crew",
-    "aircraftId": "VT-ABC",
-    "delayHours": 2,
-    "reason": "Crew Rest Requirement"
-}
-```
-
-Future versions will introduce dedicated crew objects and duty-hour modelling.
-
----
-
-# Event System
-
-Rather than printing simulation progress to the console, the simulator records structured operational events.
-
-Example:
-
-```ts
-{
-    time: 8,
-    type: "departure",
-    flightId: "AI101",
-    message: "AI101 departed BLR"
-}
-```
-
-The simulator currently records:
-
-- Weather disruptions
-- Technical disruptions
-- Crew disruptions
-- Delay events
-- Flight cancellations
-- Aircraft unavailable cancellations
-- Departures
-- Arrivals
-
-These events form a complete operational timeline that can later be visualized in the React dashboard.
-
----
-
-# REST API
-
-The simulation engine is exposed through an Express REST API, allowing external applications to interact with the simulator without directly accessing the simulation code.
-
-The backend acts as the communication layer between clients and the simulation engine.
-
-```text
-Client
-
-(Browser / Thunder Client / React)
-
-        │
-
- HTTP Request
-
-        │
-
-        ▼
-
-Express REST API
-
-        │
-
-        ▼
-
-Simulation Engine
-
-        │
-
-        ▼
-
-JSON Response
-
-        │
-
-        ▼
-
-Client
-```
-Example response:
-
-```json
-{
-    "flights": [...],
-    "aircrafts": [...],
-    "events": [...],
-    "metrics": {
-        "averageDelay": 1.25,
-        "onTimeFlights": 8,
-        "delayedFlights": 3,
-        "cancelledFlights": 1,
-        "aircraftUtilization": 71
-    }
-}
-```
-
----
-
-## API Endpoints
-
-### Get All Flights
-
-```http
-GET /flights
-```
-
-Returns every flight in the current simulation.
-
----
-
-### Get Flight By ID
-
-```http
-GET /flights/:id
-```
-
-Example:
-
-```http
-GET /flights/AI101
-```
-
-Returns:
-
-```json
-{
-    "id": "AI101",
-    "from": "BLR",
-    "to": "BOM",
-    "status": "landed"
-}
-```
-
----
-
-### Get Aircraft
-
-```http
-GET /aircraft
-```
-
-Returns every aircraft and its current simulation state.
-
----
-
-### Get Events
-
-```http
-GET /events
-```
-
-Returns the complete operational timeline.
-
-Example:
-
-```json
-[
-    {
-        "time": 0,
-        "type": "weather",
-        "message": "Weather disruption at BLR (+3h)"
-    },
-    {
-        "time": 13,
-        "type": "departure",
-        "flightId": "AI101",
-        "message": "AI101 departed BLR"
-    }
-]
-```
-
----
-
-### Run Simulation
-
-```http
-POST /simulation/run
-```
-
-Request:
-
-```json
-{
-    "disruptions": [
-        {
-            "type": "weather",
-            "airport": "BLR",
-            "delayHours": 3,
-            "reason": "Thunderstorm"
-        }
-    ]
-}
-```
-
-The server applies the supplied disruptions, executes the simulation, and returns the updated simulation state.
-
----
-
-# Project Structure
+This diagram describes the logical components and does not imply that each component runs as a separately deployed service.
+
+See [`ARCHITECHTURE.md`](ARCHITECHTURE.md) for details.
+
+## Technology Stack
+
+| Area | Technologies |
+|---|---|
+| Frontend | React, TypeScript, Vite |
+| Backend | Node.js, TypeScript, Express |
+| Database | PostgreSQL |
+| Machine Learning | Python, pandas, scikit-learn |
+| Model Persistence | joblib |
+| Testing | Vitest |
+| External Data | Aviationstack API |
+| Development Tools | Git, GitHub, VS Code, Thunder Client |
+
+## Project Structure
 
 ```text
 airline-ops-sim/
-
+├── server/
+│   ├── server.ts
+│   └── routes/
+│       └── indianFlightData.ts
+├── src/
+│   ├── engine/
+│   │   ├── clock.ts
+│   │   ├── decision.ts
+│   │   └── mlPredictor.ts
+│   └── db/
+│       └── data.ts
+├── ml/
+│   ├── data/
+│   ├── models/
+│   ├── predict_delay.py
+│   ├── prepare_bts_data.py
+│   └── train_bts_model.py
 ├── docs/
-│   ├── ARCHITECTURE.md
+│   ├── ARCHITECHTURE.md
 │   ├── DECISIONS.md
 │   └── LEARNINGS.md
-│
-├── server/
-│   └── server.ts
-│
-├── src/
-│
-│   ├── engine/
-│   │
-│   ├── clock.ts
-│   ├── clock.test.ts
-│   ├── data.ts
-│   ├── disruptions.ts
-│   ├── metrics.ts
-│   └── types.ts
-│
-│   ├── App.tsx
-│   ├── main.tsx
-│   └── index.css
-│
+├── db.ts
 ├── package.json
+├── tsconfig.json
 └── README.md
 ```
 
----
+This is a representative structure. Individual files and directories should be checked against the current repository.
 
-# Documentation
+## Getting Started
 
-The repository contains additional documentation describing the simulator in detail.
+### Prerequisites
 
-| File | Description |
-|------|-------------|
-| `ARCHITECTURE.md` | Overall system architecture |
-| `DECISIONS.md` | Major design decisions |
-| `LEARNINGS.md` | Concepts learned during development |
+- Node.js and npm.
+- Python and pip.
+- PostgreSQL.
+- An Aviationstack API key for external flight-data synchronization.
 
----
-
-# Tech Stack
-
-## Current
-
-### Language
-
-- TypeScript
-
-### Frontend
-
-- React
-- Vite
-
-### Backend
-
-- Node.js
-- Express
-- REST API
-- JSON
-
-### Testing
-
-- Vitest
-- Thunder Client
-
-### Development
-
-- Git
-- GitHub
-
----
-
-## Planned
-
-- PostgreSQL
-- Docker
-- Leaflet
-- OpenStreetMap
-- Weather APIs
-- Cloud Deployment
-
----
-
-# Running the Project
-
-## Clone
+### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/harshitakayy/airline-ops-sim.git
+cd airline-ops-sim
 ```
 
----
-
-## Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 npm install
 ```
 
----
+### 3. Configure Environment Variables
 
-## Start React
+Create a local `.env` file using the environment-variable names expected by the application.
 
-```bash
-npm run dev
+```dotenv
+DB_USER=your_database_user
+DB_HOST=localhost
+DB_NAME=your_database_name
+DB_PASSWORD=your_database_password
+DB_PORT=5432
+
+AVIATIONSTACK_API_KEY=your_api_key
 ```
 
----
+Use your own credentials. Never commit `.env`, database passwords, or API keys to GitHub.
 
-## Start Backend
+### 4. Configure PostgreSQL
+
+Create the database and required tables using the project's database schema.
+
+The flight-observation pipeline requires the synchronization-run and observation tables, including their required columns and indexes.
+
+### 5. Start the Backend and Frontend
+
+Check `package.json` for the scripts available in the current version.
+
+If these scripts are defined, start the backend:
 
 ```bash
 npm run server
 ```
 
----
+In another terminal, start the frontend:
 
-## Run Tests
+```bash
+npm run dev
+```
+
+### 6. Run Tests and Type Checks
 
 ```bash
 npm test
+npx tsc --noEmit
 ```
 
----
+### 7. Prepare the BTS Dataset
 
-# Development Roadmap
+From the project root:
 
-## ✅ Completed
+```bash
+python ml/prepare_bts_data.py
+```
 
-- Airport model
-- Aircraft model
-- Flight model
-- Aircraft rotations
-- Turnaround modelling
-- Delay propagation
-- Buffer absorption
-- Flight cancellation
-- Operational metrics
-- Aircraft utilization
-- Event logging
-- Automated testing
-- Express REST API
-- JSON API
-- Configurable disruptions
-- Weather disruptions
-- Technical disruptions
-- Crew disruptions
+To run the separate BTS training experiment:
 
----
+```bash
+python ml/train_bts_model.py
+```
 
-## 🚧 In Progress
+The prepared dataset must exist, and the training script must complete successfully before the resulting model can be described as trained.
 
-- Cost modelling
+## Testing
 
----
+The simulation engine uses Vitest for scenario-based testing, including:
 
-## 📋 Planned
+- Delay propagation and schedule-buffer absorption.
+- Aircraft location and availability.
+- Flight cancellation and downstream dependencies.
+- Event generation and ordering.
+- Operational metrics.
 
-### Frontend
+Database integration, external API requests, and ML predictions should be tested separately.
 
-- React dashboard
-- Flight timeline
-- Event timeline
-- Interactive airport map
-- Simulation controls
+## Current Limitations
 
-### Backend
+- The simulator is a simplified model, not a production airline operations control system.
+- The original ML model uses US domestic 2015 data and has not been validated on Indian operations.
+- The BTS January 2026 experiment requires separate training and evaluation.
+- Live observations depend on provider access, polling frequency, and subscription limits.
+- Confirmed arrival outcomes may not be available for recently observed flights.
+- Decision recommendations depend on configured assumptions and simulation fidelity.
+- Production deployment and real-world operational validation remain future work.
 
-- PostgreSQL
-- Historical simulations
-- Authentication
-- Scenario persistence
+## Development Roadmap
 
-### Infrastructure
+### Implemented Foundations
 
-- Docker
-- CI/CD
-- Cloud deployment
+- Aircraft and flight models.
+- Aircraft rotations and turnaround dependencies.
+- Delay propagation and schedule-buffer absorption.
+- Disruption handlers and cancellation logic.
+- Structured events and operational metrics.
+- Express REST API and simulation tests.
+- PostgreSQL-backed flight observations.
+- External flight-data synchronization.
+- Initial ML prediction and decision-support integration.
 
----
+### Ongoing Improvements
 
-# Future Improvements
+- Improve data quality and coverage.
+- Evaluate the BTS model on a chronological holdout.
+- Align ML risk predictions with simulation outcomes.
+- Strengthen decision feasibility and financial comparisons.
+- Expand API, database, and ML integration tests.
+- Improve reproducibility and documentation.
 
-The simulator is intended to evolve into a more complete airline operations platform.
+## Documentation
 
-Planned capabilities include:
+- [`ARCHITECHTURE.md`](ARCHITECHTURE.md) — system architecture and data flow.
+- [`DECISIONS.md`](DECISIONS.md) — engineering decisions and rationale.
+- [`LEARNINGS.md`](LEARNINGS.md) — concepts learned during development.
 
-- Passenger misconnections
-- Airport congestion
-- Gate assignment
-- Maintenance scheduling
-- Crew duty-hour regulations
-- Airport closures
-- Diversions
-- Maintenance scheduling
-- Crew scheduling
-- Passenger connections
-- Fuel modelling
-- Cost analysis
-- Airline recovery strategies
-- Live weather integration
-- Multi-day simulation
-- Performance analytics
+## Why This Project Matters
 
----
+This project focuses on understanding the operational dependencies behind airline delays rather than simply displaying flight information.
 
-# Why This Project Matters
+Instead of only asking where an aircraft is, the simulator asks whether the aircraft can feasibly operate its next flight. It models why delays occur, how they propagate, and how operational decisions may affect the outcome.
 
-Most airline-related student projects focus on displaying information.
+The long-term objective is to develop an explainable airline operations simulation and decision-support platform.
 
-This project focuses on **simulating airline operations**.
+**Author:** Harshita Kumawat
 
-Instead of asking:
-
-> "Where is this aircraft?"
-
-the simulator asks:
-
-> "Can this aircraft legally operate its next flight?"
-
-Instead of displaying delays, it models **why those delays occur** and how they propagate through the airline schedule.
-
-The long-term objective is to build a realistic airline operations simulator capable of visualizing disruptions, operational decisions, and recovery strategies through an interactive web application.
-
----
-
-# Status
-
-**🚧 Active Development**
-
-Current capabilities include:
-
-- Aircraft rotations
-- Delay propagation
-- Schedule buffer absorption
-- Flight cancellation logic
-- Aircraft availability validation
-- Configurable operational disruptions
-- Structured event timeline
-- Operational metrics
-- Express REST API
-- Automated testing
-
-Current focus: Expanding the React dashboard with richer operational views while integrating PostgreSQL for persistent simulation storage, followed by Docker and CI/CD.
+**Repository:** https://github.com/harshitakayy/airline-ops-sim

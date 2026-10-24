@@ -1,342 +1,55 @@
-# Design Decisions
+## External Flight Observations Are Stored Separately
 
-This document explains why certain implementation decisions were made during development.
-
----
-
-## Fresh Simulation State
-
-Every simulation run starts with fresh flight and aircraft objects.
+Provider observations are stored in `flight_observations` rather than automatically overwriting the simulator's `flights` table.
 
 ### Reason
 
-Simulation objects are modified while the simulation runs.
+The simulator uses its own operational state and scheduling rules, while external observations describe provider-reported flight information at particular times. Keeping them separate prevents external data from silently changing a simulation run.
 
-For example:
+## Synchronization Runs Are Auditable
 
-- Flight status changes
-- Aircraft location changes
-- Delay values change
-
-Reusing the same objects would cause later simulations to start with incorrect state.
-
----
-
-## Events Instead of Console Output
-
-The engine stores structured events instead of printing everything to the console.
-
-### Benefits
-
-- Easier testing
-- Easier debugging
-- Future API support
-- Dashboard integration
-- Event timeline visualization
-- Multiple clients can consume the same event history
-
----
-
-## Delay Propagation by Aircraft Rotation
-
-Delays only propagate between flights operated by the same aircraft.
-
-Different aircraft operate independently.
+Each ingestion attempt is recorded in `flight_data_sync_runs`, and observations reference the corresponding run.
 
 ### Reason
 
-This reflects real airline operations where one aircraft's delay should not directly affect another aircraft unless additional operational constraints are introduced.
+This makes it possible to inspect synchronization status, record counts, failures, and observation provenance.
 
----
+## Raw Provider Payloads Are Retained
 
-## Automated Scenario Testing
-
-Each unit test builds its own simulation scenario instead of modifying the default simulation data.
-
-### Benefits
-
-- Independent tests
-- Predictable results
-- Easier maintenance
-- Easier debugging
-- No shared state between tests
-
----
-
-## Simulation Engine Separate from API
-
-The simulation logic is independent of Express.
-
-The REST API simply calls the simulation engine and returns its results.
+The original provider response is stored as JSON alongside normalized fields.
 
 ### Reason
 
-Separating the simulation engine from the API makes the engine reusable.
+Normalized columns make common queries easier, while the raw payload helps with debugging, field mapping, and future schema changes.
 
-The same engine can later be used by:
+## Confirmed Arrival Outcomes Define ML Labels
 
-- React dashboard
-- REST API
-- Command-line interface
-- Automated tests
-
-without changing the simulation logic.
-
----
-
-## REST API for External Access
-
-The simulation engine is exposed through an Express REST API.
+The dataset-export workflow uses scheduled and actual arrival times to calculate arrival delay. Estimated arrival times are not used as confirmed training labels.
 
 ### Reason
 
-Using a REST API allows external clients to interact with the simulator without needing access to the simulation code.
+A supervised label must represent the outcome being predicted. Treating a changing estimate as an actual outcome would introduce label noise and could misrepresent model performance.
 
-Current clients include:
+## Codeshare Observations Require Identity Resolution
 
-- Thunder Client
-- Future React frontend
-
-Additional clients can be added later without modifying the engine.
-
----
-
-## JSON as the Communication Format
-
-The backend returns simulation results as JSON.
+Marketed flight numbers and operating-flight numbers are not always identical. The pipeline retains source observations and derives operating-flight identity where possible.
 
 ### Reason
 
-JSON is the standard format used for communication over HTTP.
+Grouping aliases can reduce duplicate counting, but the original records must remain available for auditing and data-quality checks.
 
-It is lightweight, human-readable, and supported by virtually every programming language, making it suitable for communication between the backend and frontend.
+## ML Risk Is Not Delay Duration
 
----
-
-## Server Stores Current Simulation State
-
-The Express server keeps the latest simulation result in memory.
-
-```ts
-let simulation = runSimulation();
-```
+The existing classifier predicts the probability of arrival delay of at least 30 minutes. It does not predict exact delay minutes.
 
 ### Reason
 
-This avoids recalculating the simulation every time a client requests flights, aircraft, or events.
+A probability of crossing a threshold cannot be directly interpreted as an expected number of minutes. Decision logic must keep classification risk, simulated delays, and cost assumptions conceptually separate.
 
-Instead, the simulation is executed once and its current state is reused until a new simulation is triggered.
+## Historical Model Data Is Not Indian Validation Data
 
----
-
-## Resource-Oriented API Design
-
-The API is organized around resources.
-
-Current endpoints:
-
-- `GET /flights`
-- `GET /flights/:id`
-- `GET /aircraft`
-- `GET /events`
-- `POST /simulation/run`
+The original model uses US domestic 2015 flight data. The BTS January 2026 dataset is a separate experiment.
 
 ### Reason
 
-Following REST principles makes the API easier to understand, extend, and integrate with future clients.
-
----
-
-## Configurable Simulation Inputs
-
-The simulation accepts configuration through a `SimulationOptions` object instead of hardcoded values.
-
-Example:
-
-```ts
-runSimulation(data, {
-    disruptions: [
-        {
-            type: "weather",
-            airport: "BLR",
-            delayHours: 3,
-            reason: "Thunderstorm"
-        }
-    ]
-});
-```
-
-### Reason
-
-This allows the same simulation engine to be reused with different scenarios without modifying the source code.
-
-It also enables external clients such as the React dashboard to configure simulations through the REST API.
-
----
-
-## Modular Disruption System
-
-Disruption handling is separated from the simulation clock.
-
-```
-runSimulation()
-
-↓
-
-applyDisruptions()
-
-↓
-
-Weather
-Crew
-Technical
-```
-
-### Reason
-
-Each disruption type has its own implementation.
-
-This keeps the simulation clock focused on advancing time while the disruption system is responsible for modifying flight schedules.
-
-The architecture also makes it easier to add new disruption types in the future.
-
----
-
-## Specialized Disruption Handlers
-
-Weather, technical, and crew disruptions are implemented using separate functions.
-
-### Reason
-
-Although the implementations are currently similar, they represent different operational concepts.
-
-Keeping them separate allows each disruption type to evolve independently without creating one large function containing many conditional statements.
-
-Future examples include:
-
-- Airport closures
-- Bird strikes
-- Maintenance delays
-- Air traffic control restrictions
-
----
-
-## Events Represent Operational History
-
-Every significant operation is recorded as a structured simulation event.
-
-Examples include:
-
-- Weather disruptions
-- Technical disruptions
-- Crew disruptions
-- Flight delays
-- Flight cancellations
-- Departures
-- Arrivals
-
-### Reason
-
-The event timeline becomes the single source of truth for what happened during a simulation.
-
-This allows the same event history to be reused by:
-
-- REST API responses
-- React timeline visualization
-- Testing
-- Future analytics modules
-
----
-
-## Cancellation Threshold
-
-Flights are cancelled when their accumulated delay exceeds a configurable threshold.
-
-Example:
-
-```ts
-const CANCELLATION_THRESHOLD = 6;
-```
-
-### Reason
-
-In reality, airlines cannot indefinitely delay flights.
-
-Introducing a cancellation threshold prevents unrealistic simulations where a flight continues to operate after excessive delays. It also allows downstream operational impacts to be modelled more realistically.
-
----
-
-## Aircraft State Determines Operations
-
-Flights are not evaluated independently.
-
-Before a flight departs, the simulator verifies the state of its assigned aircraft.
-
-Required conditions include:
-
-- Aircraft exists
-- Aircraft is grounded
-- Aircraft is at the correct airport
-- Previous flight has completed successfully
-
-### Reason
-
-Using aircraft state rather than scheduled time alone prevents impossible situations such as an aircraft operating multiple flights simultaneously or departing from the wrong airport.
-
----
-
-## Downstream Cancellation
-
-If a flight is cancelled, later flights in the same aircraft rotation may also be cancelled.
-
-### Reason
-
-A cancelled flight prevents the aircraft from reaching its next scheduled departure airport.
-
-Cancelling dependent flights models aircraft unavailability without introducing unrealistic aircraft repositioning or teleportation.
-
----
-
-## Delay Propagation After Landing
-
-Delay propagation is calculated only after the previous flight has landed.
-
-### Reason
-
-The actual arrival time of a flight cannot be known while it is still airborne or waiting to depart.
-
-Waiting until landing ensures downstream departure calculations are based on confirmed aircraft availability rather than predicted arrival times.
-
-This keeps the simulation consistent with the event-driven nature of airline operations.
-
----
-
-## Metrics Calculated After Simulation
-
-Operational metrics are generated only after the simulation clock finishes.
-
-Conceptually:
-
-```text
-Run Simulation
-
-↓
-
-Generate Events
-
-↓
-
-Calculate Metrics
-
-↓
-
-Return Results
-```
-
-### Reason
-
-Metrics summarize the completed simulation rather than influencing it.
-
-Separating analytics from simulation logic keeps responsibilities independent and allows additional reports to be added without modifying the simulation engine.
-
----
+Model performance depends on the distribution and characteristics of the data used for training and evaluation. A model trained on US flights should not be represented as validated for Indian airline operations without appropriate evaluation.

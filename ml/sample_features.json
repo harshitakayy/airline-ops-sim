@@ -1,0 +1,18 @@
+{
+  "YEAR": 2015,
+  "MONTH": 12,
+  "DAY": 15,
+  "DAY_OF_WEEK": 2,
+  "FLIGHT_NUMBER": 1234,
+  "SCHEDULED_DEPARTURE": 1530,
+  "departure_hour": 15,
+  "departure_minute": 30,
+  "SCHEDULED_TIME": 110,
+  "DISTANCE": 528,
+  "route_delay_rate": 0.11,
+  "previous_aircraft_delay": 1,
+  "previous_aircraft_delay_minutes": 42.0,
+  "AIRLINE": "WN",
+  "ORIGIN_AIRPORT": "ATL",
+  "DESTINATION_AIRPORT": "MCO"
+}

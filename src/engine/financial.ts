@@ -10,10 +10,7 @@ export function calculateFinancialImpact(
     assumptions: CostAssumptions = DEFAULT_COST_ASSUMPTIONS
 ): FinancialImpact {
 
-    const totalDelayMinutes = flights.reduce(
-        (sum, flight) => sum + flight.delayMinutes,
-        0
-    );
+    const totalDelayMinutes = flights.reduce((sum, flight) =>flight.status === "cancelled"? sum: sum + flight.delayMinutes,0);
 
     const cancelledFlights = flights.filter(
         flight => flight.status === "cancelled"
